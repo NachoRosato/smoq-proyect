@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configuración para Node.js en Hostinger
-  output: "standalone",
+  // Configuración para hosting estático
+  output: "export",
   trailingSlash: true,
   images: {
     domains: [
