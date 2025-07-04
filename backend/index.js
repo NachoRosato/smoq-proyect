@@ -48,6 +48,16 @@ app.get("/", (req, res) => {
   });
 });
 
+// Health check para Railway
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || "development",
+  });
+});
+
 // Manejo de errores
 app.use((err, req, res, next) => {
   console.error(err.stack);
