@@ -4,6 +4,7 @@ const nextConfig = {
   output: "export",
   trailingSlash: true,
   images: {
+    unoptimized: true,
     domains: [
       "localhost",
       "images.unsplash.com",
@@ -20,20 +21,7 @@ const nextConfig = {
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  // Configurar archivos estáticos
-  async headers() {
-    return [
-      {
-        source: "/assets/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-    ];
-  },
+  // Headers removidos para export estático
   // Optimizaciones para producción
   compress: true,
   poweredByHeader: false,
