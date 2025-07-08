@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { Plus, Edit, Trash2, Package, DollarSign, Users, ShoppingCart } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { productosApi } from '../../utils/api'
+import { productosApi, gustosApi, categoriasApi } from '../../utils/api'
 import { formatPrice } from '../../lib/helpers'
 import AdminLayout from '../../components/AdminLayout'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -21,14 +21,6 @@ interface Producto {
   activo: boolean
   gustos?: { _id: string; nombre: string; descripcion?: string }[]
 }
-
-const categoriasApi = {
-  get: async (token: string) => fetch('/api/config/categorias', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-};
-
-const gustosApi = {
-  get: async (token: string) => fetch('/api/config/gustos', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-};
 
 export default function AdminDashboard() {
   const { auth } = useAuth()
@@ -57,10 +49,22 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadProductos()
-    if (auth.token) {
-      categoriasApi.get(auth.token).then(setCategorias)
-      gustosApi.get(auth.token).then(setGustos)
-    }
+    categoriasApi.getAll().then(res => {
+      if (res.success && Array.isArray(res.data)) {
+        setCategorias(res.data)
+      } else {
+        setCategorias([])
+        console.error('Error al obtener categorías:', res)
+      }
+    })
+    gustosApi.getAll().then(res => {
+      if (res.success && Array.isArray(res.data)) {
+        setGustos(res.data)
+      } else {
+        setGustos([])
+        console.error('Error al obtener gustos:', res)
+      }
+    })
   }, [auth.token])
 
   useEffect(() => {
