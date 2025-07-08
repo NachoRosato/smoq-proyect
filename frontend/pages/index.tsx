@@ -10,6 +10,7 @@ import { Listbox } from '@headlessui/react'
 import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/24/outline'
 import FloatingWhatsAppButton from '../components/FloatingWhatsAppButton'
 import { useRouter } from 'next/router'
+import Link from 'next/link'
 
 export interface Producto {
   _id: string
@@ -123,7 +124,6 @@ export default function Home() {
 
   const calculateDropdownPosition = () => {
     const viewportHeight = window.innerHeight
-    const scrollY = window.scrollY
     const searchSection = document.querySelector('[data-search-section]')
     
     if (searchSection) {
@@ -490,7 +490,7 @@ export default function Home() {
         </main>
 
         {/* Footer Rediseñado coherente con el navbar */}
-        <footer className="pt-16 pb-8 mt-24 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgb(0 0 0) 0%, rgb(21 21 21) 50%, rgb(159, 129, 51) 100%)' }}>
+        <footer className="pt-16 pb-8 mt-24 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgb(0, 0, 0) 0%, rgb(21, 21, 21) 50%, rgb(68 59 35) 100%)' }}>
           <div className="container mx-auto px-4 flex flex-col md:flex-row md:justify-between md:items-start gap-12 relative z-10">
             {/* Logo y slogan */}
             <div className="mb-8 md:mb-0 flex-1 min-w-[220px]">
@@ -508,8 +508,8 @@ export default function Home() {
             <div className="flex-1 min-w-[180px] mb-8 md:mb-0">
               <h4 className="text-lg font-bold mb-4 text-[rgb(124,79,0)]">Enlaces útiles</h4>
               <ul className="space-y-2 text-gray-200">
-                <li><a href="/" className="hover:text-[rgb(124,79,0)] transition-colors">Inicio</a></li>
-                <li><a href="/carrito" className="hover:text-[rgb(124,79,0)] transition-colors">Carrito</a></li>
+                <li><Link href="/" className="hover:text-[rgb(124,79,0)] transition-colors">Inicio</Link></li>
+                <li><Link href="/carrito" className="hover:text-[rgb(124,79,0)] transition-colors">Carrito</Link></li>
                 <li><a href="#productos" className="hover:text-[rgb(124,79,0)] transition-colors">Productos</a></li>
                 <li><a href="#" className="hover:text-[rgb(124,79,0)] transition-colors">Contacto</a></li>
               </ul>

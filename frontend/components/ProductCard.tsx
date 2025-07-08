@@ -1,4 +1,4 @@
-import { ShoppingCart, Star, TrendingUp, Zap } from 'lucide-react'
+import { ShoppingCart, Zap } from 'lucide-react'
 import { formatPrice } from '../lib/helpers'
 import OptimizedImage from './OptimizedImage'
 import { useState } from 'react'
