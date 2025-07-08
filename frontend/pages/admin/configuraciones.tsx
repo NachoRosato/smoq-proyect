@@ -4,6 +4,8 @@ import toast from 'react-hot-toast'
 import { configApi, gustosApi, categoriasApi } from '../../utils/api'
 import { useAuth } from '../../context/AuthContext'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://smoq-proyect-production.up.railway.app'
+
 export default function Configuraciones() {
   const { auth } = useAuth()
   const [minFreeShipping, setMinFreeShipping] = useState(25000)
@@ -97,7 +99,7 @@ export default function Configuraciones() {
 
   // Funciones locales para create, update y delete de categorías y gustos
   const createCategoria = async (nombre: string, descripcion: string) => {
-    const res = await fetch(`/api/config/categorias`, {
+    const res = await fetch(`${API_URL}/api/config/categorias`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, descripcion })
@@ -105,7 +107,7 @@ export default function Configuraciones() {
     return res.json()
   }
   const updateCategoria = async (id: string, nombre: string, descripcion: string) => {
-    const res = await fetch(`/api/config/categorias/${id}`, {
+    const res = await fetch(`${API_URL}/api/config/categorias/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, descripcion })
@@ -113,11 +115,11 @@ export default function Configuraciones() {
     return res.json()
   }
   const deleteCategoria = async (id: string) => {
-    const res = await fetch(`/api/config/categorias/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${API_URL}/api/config/categorias/${id}`, { method: 'DELETE' })
     return res.json()
   }
   const createGusto = async (nombre: string, descripcion: string) => {
-    const res = await fetch(`/api/config/gustos`, {
+    const res = await fetch(`${API_URL}/api/config/gustos`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, descripcion })
@@ -125,7 +127,7 @@ export default function Configuraciones() {
     return res.json()
   }
   const updateGusto = async (id: string, nombre: string, descripcion: string) => {
-    const res = await fetch(`/api/config/gustos/${id}`, {
+    const res = await fetch(`${API_URL}/api/config/gustos/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, descripcion })
@@ -133,7 +135,7 @@ export default function Configuraciones() {
     return res.json()
   }
   const deleteGusto = async (id: string) => {
-    const res = await fetch(`/api/config/gustos/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${API_URL}/api/config/gustos/${id}`, { method: 'DELETE' })
     return res.json()
   }
 
