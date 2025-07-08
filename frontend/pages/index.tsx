@@ -490,7 +490,7 @@ export default function Home() {
         </main>
 
         {/* Footer Rediseñado coherente con el navbar */}
-        <footer className="pt-16 pb-8 mt-24 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgb(0, 0, 0) 0%, rgb(21, 21, 21) 50%, rgb(68 59 35) 100%)' }}>
+        <footer className="pt-16 pb-8 mt-24 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgb(0 0 0) 0%, rgb(21 21 21) 50%, rgb(30 24 9) 100%)' }}>
           <div className="container mx-auto px-4 flex flex-col md:flex-row md:justify-between md:items-start gap-12 relative z-10">
             {/* Logo y slogan */}
             <div className="mb-8 md:mb-0 flex-1 min-w-[220px]">

@@ -1,24 +1,8 @@
 import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/AdminLayout'
 import toast from 'react-hot-toast'
-import { configApi } from '../../utils/api'
+import { configApi, gustosApi, categoriasApi } from '../../utils/api'
 import { useAuth } from '../../context/AuthContext'
-
-// Nueva API para categorías
-const categoriasApi = {
-  get: async (token: string) => fetch('/api/config/categorias', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-  create: async (nombre: string, descripcion: string, token: string) => fetch('/api/config/categorias', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ nombre, descripcion }) }).then(r => r.json()),
-  update: async (id: string, nombre: string, descripcion: string, token: string) => fetch(`/api/config/categorias/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ nombre, descripcion }) }).then(r => r.json()),
-  delete: async (id: string, token: string) => fetch(`/api/config/categorias/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-};
-
-// API para gustos
-const gustosApi = {
-  get: async (token: string) => fetch('/api/config/gustos', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-  create: async (nombre: string, descripcion: string, token: string) => fetch('/api/config/gustos', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ nombre, descripcion }) }).then(r => r.json()),
-  update: async (id: string, nombre: string, descripcion: string, token: string) => fetch(`/api/config/gustos/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ nombre, descripcion }) }).then(r => r.json()),
-  delete: async (id: string, token: string) => fetch(`/api/config/gustos/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-};
 
 export default function Configuraciones() {
   const { auth } = useAuth()
@@ -51,15 +35,29 @@ export default function Configuraciones() {
 
   // Cargar categorías
   useEffect(() => {
-    if (!auth.token) return
-    categoriasApi.get(auth.token || '').then(setCategorias)
-  }, [auth.token])
+    categoriasApi.getAll().then(res => {
+      if (res.success && Array.isArray(res.data)) {
+        setCategorias(res.data)
+      } else {
+        setCategorias([])
+        console.error('Error al obtener categorías:', res)
+        toast.error('No se pudieron cargar las categorías')
+      }
+    })
+  }, [])
 
   // Cargar gustos
   useEffect(() => {
-    if (!auth.token) return
-    gustosApi.get(auth.token || '').then(setGustos)
-  }, [auth.token])
+    gustosApi.getAll().then(res => {
+      if (res.success && Array.isArray(res.data)) {
+        setGustos(res.data)
+      } else {
+        setGustos([])
+        console.error('Error al obtener gustos:', res)
+        toast.error('No se pudieron cargar los gustos')
+      }
+    })
+  }, [])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -97,22 +95,65 @@ export default function Configuraciones() {
     }
   }
 
+  // Funciones locales para create, update y delete de categorías y gustos
+  const createCategoria = async (nombre: string, descripcion: string) => {
+    const res = await fetch(`/api/config/categorias`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    })
+    return res.json()
+  }
+  const updateCategoria = async (id: string, nombre: string, descripcion: string) => {
+    const res = await fetch(`/api/config/categorias/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    })
+    return res.json()
+  }
+  const deleteCategoria = async (id: string) => {
+    const res = await fetch(`/api/config/categorias/${id}`, { method: 'DELETE' })
+    return res.json()
+  }
+  const createGusto = async (nombre: string, descripcion: string) => {
+    const res = await fetch(`/api/config/gustos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    })
+    return res.json()
+  }
+  const updateGusto = async (id: string, nombre: string, descripcion: string) => {
+    const res = await fetch(`/api/config/gustos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, descripcion })
+    })
+    return res.json()
+  }
+  const deleteGusto = async (id: string) => {
+    const res = await fetch(`/api/config/gustos/${id}`, { method: 'DELETE' })
+    return res.json()
+  }
+
   const handleCatSave = async (e: any) => {
     e.preventDefault()
     setCatLoading(true)
     try {
       let res
       if (catEdit) {
-        res = await categoriasApi.update(catEdit._id, catNombre, catDesc, auth.token || '')
+        res = await updateCategoria(catEdit._id, catNombre, catDesc)
       } else {
-        res = await categoriasApi.create(catNombre, catDesc, auth.token || '')
+        res = await createCategoria(catNombre, catDesc)
       }
       if (res && !res.error) {
         toast.success(catEdit ? 'Categoría actualizada' : 'Categoría creada')
         setCatNombre('')
         setCatDesc('')
         setCatEdit(null)
-        setCategorias(await categoriasApi.get(auth.token || ''))
+        const reload = await categoriasApi.getAll();
+        setCategorias(reload.success && Array.isArray(reload.data) ? reload.data : [])
       } else {
         toast.error(res.error || 'Error')
       }
@@ -131,10 +172,11 @@ export default function Configuraciones() {
     if (!window.confirm('¿Eliminar esta categoría?')) return
     setCatLoading(true)
     try {
-      const res = await categoriasApi.delete(id, auth.token || '')
+      const res = await deleteCategoria(id)
       if (res && !res.error) {
         toast.success('Categoría eliminada')
-        setCategorias(await categoriasApi.get(auth.token || ''))
+        const reload = await categoriasApi.getAll();
+        setCategorias(reload.success && Array.isArray(reload.data) ? reload.data : [])
       } else {
         toast.error(res.error || 'Error')
       }
@@ -149,16 +191,17 @@ export default function Configuraciones() {
     try {
       let res
       if (gustoEdit) {
-        res = await gustosApi.update(gustoEdit._id, gustoNombre, gustoDesc, auth.token || '')
+        res = await updateGusto(gustoEdit._id, gustoNombre, gustoDesc)
       } else {
-        res = await gustosApi.create(gustoNombre, gustoDesc, auth.token || '')
+        res = await createGusto(gustoNombre, gustoDesc)
       }
       if (res && !res.error) {
         toast.success(gustoEdit ? 'Gusto actualizado' : 'Gusto creado')
         setGustoNombre('')
         setGustoDesc('')
         setGustoEdit(null)
-        setGustos(await gustosApi.get(auth.token || ''))
+        const reload = await gustosApi.getAll();
+        setGustos(reload.success && Array.isArray(reload.data) ? reload.data : [])
       } else {
         toast.error(res.error || 'Error')
       }
@@ -177,10 +220,11 @@ export default function Configuraciones() {
     if (!window.confirm('¿Eliminar este gusto?')) return
     setGustoLoading(true)
     try {
-      const res = await gustosApi.delete(id, auth.token || '')
+      const res = await deleteGusto(id)
       if (res && !res.error) {
         toast.success('Gusto eliminado')
-        setGustos(await gustosApi.get(auth.token || ''))
+        const reload = await gustosApi.getAll();
+        setGustos(reload.success && Array.isArray(reload.data) ? reload.data : [])
       } else {
         toast.error(res.error || 'Error')
       }

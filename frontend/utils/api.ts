@@ -50,10 +50,10 @@ async function apiRequest<T>(
 
 // Funciones específicas para productos
 export const productosApi = {
-  getAll: () => apiRequest('/productos'),
-  getById: (id: string) => apiRequest(`/productos/${id}`),
+  getAll: () => apiRequest('/api/productos'),
+  getById: (id: string) => apiRequest(`/api/productos/${id}`),
   create: (producto: any, token: string) =>
-    apiRequest('/productos', {
+    apiRequest('/api/productos', {
       method: 'POST',
       body: JSON.stringify(producto),
       headers: {
@@ -61,7 +61,7 @@ export const productosApi = {
       },
     }),
   update: (id: string, producto: any, token: string) =>
-    apiRequest(`/productos/${id}`, {
+    apiRequest(`/api/productos/${id}`, {
       method: 'PUT',
       body: JSON.stringify(producto),
       headers: {
@@ -69,7 +69,7 @@ export const productosApi = {
       },
     }),
   delete: (id: string, token: string) =>
-    apiRequest(`/productos/${id}`, {
+    apiRequest(`/api/productos/${id}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -80,7 +80,7 @@ export const productosApi = {
 // Funciones específicas para autenticación
 export const authApi = {
   login: (email: string, password: string) =>
-    apiRequest('/auth/login', {
+    apiRequest('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
@@ -99,7 +99,7 @@ export const pedidosApi = {
       cantidad: number
     }>
   }) =>
-    apiRequest('/pedidos', {
+    apiRequest('/api/pedidos', {
       method: 'POST',
       body: JSON.stringify(pedido),
     }),
@@ -184,4 +184,15 @@ export const configApi = {
       }
     }
   }
+}
+
+// Funciones específicas para gustos y categorías
+export const gustosApi = {
+  getAll: () => apiRequest('/api/config/gustos'),
+  // Puedes agregar create, update, delete si lo necesitas
+}
+
+export const categoriasApi = {
+  getAll: () => apiRequest('/api/config/categorias'),
+  // Puedes agregar create, update, delete si lo necesitas
 } 
