@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { LogOut, Package, Home, MessageCircle, Settings, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { SidebarProvider, useSidebar } from '../context/SidebarContext'
+import { useSidebar } from '../context/SidebarContext'
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -76,7 +76,7 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
               {/* Botón para ocultar/mostrar sidebar */}
             <button
               onClick={toggleSidebar}
-              style={{ background: '#FFF1B8', border: '2px solid #FFDB7E' }}
+              style={{ background: 'rgb(96 70 41)' }}
               className="absolute -right-3 top-16 transform -translate-y-1/2 w-8 h-8 rounded-full shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center z-[1]"
             >
               <ChevronLeft className={`w-5 h-5 transition-transform duration-300 ${sidebarOpen ? 'rotate-0' : 'rotate-180'} ${isRotating ? 'animate-spin-slow' : ''}`} color="#fff" />
@@ -99,9 +99,12 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
                 href="/admin/dashboard"
                 className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   router.pathname === '/admin/dashboard'
-                    ? 'bg-amber-600 text-white shadow-md transform scale-105'
+                    ? 'text-white shadow-md transform scale-105 hover:bg-amber-100 hover:text-amber-900'
                     : 'text-amber-800 hover:bg-amber-100 hover:text-amber-900'
                 }`}
+                style={{
+                  backgroundColor: router.pathname === '/admin/dashboard' ? 'rgb(96 70 41)' : 'transparent'
+                }}
               >
                 <Package className="w-5 h-5 mr-3" />
                 Dashboard
@@ -111,9 +114,12 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
                 href="/admin/configuraciones"
                 className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   router.pathname === '/admin/configuraciones'
-                    ? 'bg-amber-600 text-white shadow-md transform scale-105'
+                    ? 'text-white shadow-md transform scale-105 hover:bg-amber-100 hover:text-amber-900'
                     : 'text-amber-800 hover:bg-amber-100 hover:text-amber-900'
                 }`}
+                style={{
+                  backgroundColor: router.pathname === '/admin/configuraciones' ? 'rgb(96 70 41)' : 'transparent'
+                }}
               >
                 <Settings className="w-5 h-5 mr-3" />
                 Configuraciones
@@ -123,9 +129,12 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
                 href="/admin/whatsapp"
                 className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   router.pathname === '/admin/whatsapp'
-                    ? 'bg-amber-600 text-white shadow-md transform scale-105'
+                    ? 'text-white shadow-md transform scale-105 hover:bg-amber-100 hover:text-amber-900'
                     : 'text-amber-800 hover:bg-amber-100 hover:text-amber-900'
                 }`}
+                style={{
+                  backgroundColor: router.pathname === '/admin/whatsapp' ? 'rgb(96 70 41)' : 'transparent'
+                }}
               >
                 <MessageCircle className="w-5 h-5 mr-3" />
                 Configuración WhatsApp
@@ -168,7 +177,7 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
       {!sidebarOpen && (
         <button
           onClick={toggleSidebar}
-          style={{ background: '#FFF1B8', border: '2px solid #FFDB7E' }}
+          style={{ background: 'rgb(96 70 41)' }}
           className="fixed left-4 top-4 z-40 w-12 h-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
         >
           <ChevronLeft className={`w-7 h-7 rotate-180 ${isRotating ? 'animate-spin-slow' : ''}`} color="#fff" />

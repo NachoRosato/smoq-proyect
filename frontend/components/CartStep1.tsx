@@ -1,7 +1,6 @@
 import { useCart } from '../context/CartContext'
 import { formatPrice } from '../lib/helpers'
-import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Package, AlertCircle, CheckCircle } from 'lucide-react'
-import { useState } from 'react'
+import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Package, CheckCircle } from 'lucide-react'
 import OptimizedImage from './OptimizedImage'
 import Link from 'next/link'
 
@@ -11,7 +10,6 @@ interface CartStep1Props {
 
 export default function CartStep1({ onNext }: CartStep1Props) {
   const { state, updateQuantity, removeItem } = useCart()
-  const [removingItem, setRemovingItem] = useState<string | null>(null)
 
   const handleQuantityChange = (id: string, gustoId: string | undefined, newQuantity: number) => {
     if (newQuantity < 1) return
@@ -19,11 +17,7 @@ export default function CartStep1({ onNext }: CartStep1Props) {
   }
 
   const handleRemoveItem = async (id: string) => {
-    setRemovingItem(id)
-    setTimeout(() => {
-      removeItem(id)
-      setRemovingItem(null)
-    }, 200)
+    removeItem(id)
   }
 
   const totalItems = state.items.reduce((sum, item) => sum + item.cantidad, 0)

@@ -1,16 +1,32 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingCart, Menu, X, User } from 'lucide-react'
+import { ShoppingCart, Menu, X, Package, ShoppingBag } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useSideCart } from '../context/SideCartContext'
+import { useRouter } from 'next/router'
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { state } = useCart()
   const { open } = useSideCart()
+  const router = useRouter();
 
   const cartItemCount = state.items.reduce((total, item) => total + item.cantidad, 0)
+
+  const handleProductosClick = () => {
+    if (router.pathname === '/') {
+      const productosSection = document.getElementById('productos')
+      if (productosSection) {
+        productosSection.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start'
+        })
+      }
+    } else {
+      router.push('/?scroll=productos')
+    }
+  }
 
   return (
     <nav className="sticky top-0 z-50" style={{
@@ -32,34 +48,29 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8 ml-auto mr-8">
-            <Link 
-              href="/" 
-              className="text-white hover:text-gray-200 transition-colors font-medium"
+            <button 
+              onClick={handleProductosClick}
+              className="text-white transition-all duration-300 font-medium flex items-center space-x-2 group cursor-pointer"
             >
-              Productos
-            </Link>
+              <Package className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+              <span className="group-hover:translate-x-1 transition-transform duration-300">Productos</span>
+            </button>
             <Link 
               href="/carrito" 
-              className="text-white hover:text-gray-200 transition-colors font-medium"
+              className="text-white transition-all duration-300 font-medium flex items-center space-x-2 group"
             >
-              Carrito
-            </Link>
-            <Link 
-              href="/admin/login" 
-              className="text-white hover:text-gray-200 transition-colors flex items-center space-x-1 font-medium"
-            >
-              <User className="w-4 h-4" />
-              <span>Admin</span>
+              <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+              <span className="group-hover:translate-x-1 transition-transform duration-300">Carrito</span>
             </Link>
           </div>
 
           {/* Cart Icon */}
           <button
             onClick={open}
-            className="relative flex items-center justify-center w-12 h-12 rounded-full bg-white hover:bg-gray-100 text-gray-800 shadow-lg transition-all duration-200 ml-2"
+            className="relative flex items-center justify-center w-12 h-12 rounded-full bg-white hover:bg-amber-50 text-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 ml-2 group"
             title="Ver carrito"
           >
-            <ShoppingCart className="w-6 h-6" />
+            <ShoppingCart className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
             {cartItemCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {cartItemCount}
@@ -82,11 +93,22 @@ export default function Navbar() {
             className="md:hidden absolute left-0 right-0 mx-4 mt-6 border border-gray-700 bg-black rounded-lg shadow-2xl z-50 transition-all duration-300 opacity-100 translate-y-0"
           >
             <div className="flex flex-col space-y-2 p-4">
-              <Link className="text-white px-4 py-3 rounded hover:bg-gray-800 transition-colors" href="/">Productos</Link>
-              <Link className="text-white px-4 py-3 rounded hover:bg-gray-800 transition-colors" href="/carrito/">Carrito (11)</Link>
-              <Link className="text-white px-4 py-3 rounded hover:bg-gray-800 transition-colors flex items-center space-x-2" href="/admin/login/">
-                {/* icono */}
-                <span>Admin</span>
+              <button 
+                onClick={() => {
+                  handleProductosClick();
+                  setIsMenuOpen(false);
+                }}
+                className="text-white px-4 py-3 rounded hover:bg-gray-800 transition-all duration-300 flex items-center space-x-3 group cursor-pointer text-left w-full"
+              >
+                <Package className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                <span className="group-hover:translate-x-1 transition-transform duration-300">Productos</span>
+              </button>
+              <Link 
+                className="text-white px-4 py-3 rounded hover:bg-gray-800 transition-all duration-300 flex items-center space-x-3 group" 
+                href="/carrito/"
+              >
+                <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                <span className="group-hover:translate-x-1 transition-transform duration-300">Carrito</span>
               </Link>
             </div>
           </div>

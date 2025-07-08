@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { configApi } from '../utils/api'
 
 export default function TestWhatsApp() {
@@ -109,9 +110,9 @@ ${whatsappGoodbye || 'Enviado desde la página de prueba'}`
         </div>
 
         <div className="mt-6 text-center">
-          <a href="/" className="text-blue-600 hover:text-blue-800 text-sm">
+          <Link href="/" className="text-blue-600 hover:text-blue-800 text-sm">
             ← Volver a la tienda
-          </a>
+          </Link>
         </div>
       </div>
     </div>

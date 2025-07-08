@@ -11,17 +11,6 @@ interface Gusto {
   descripcion?: string
 }
 
-interface Producto {
-  _id: string
-  nombre: string
-  precio: number
-  descripcion: string
-  imagen: string
-  categoria: string
-  stock: number
-  gustos?: Gusto[]
-}
-
 interface SideCartProps {
   isOpen: boolean
   onClose: () => void

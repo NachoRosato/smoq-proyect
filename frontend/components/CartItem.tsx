@@ -13,6 +13,7 @@ interface CartItemProps {
       categoria: string
     }
     cantidad: number
+    gustoId?: string
   }
 }
 
@@ -20,11 +21,11 @@ export default function CartItem({ item }: CartItemProps) {
   const { updateQuantity, removeItem } = useCart()
 
   const handleQuantityChange = (newQuantity: number) => {
-    updateQuantity(item.producto._id, newQuantity)
+    updateQuantity(item.producto._id, item.gustoId, newQuantity)
   }
 
   const handleRemove = () => {
-    removeItem(item.producto._id)
+    removeItem(item.producto._id, item.gustoId)
   }
 
   return (

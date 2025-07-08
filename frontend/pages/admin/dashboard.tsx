@@ -562,9 +562,11 @@ export default function AdminDashboard() {
                   {formData.imagen && (
                     <div className="mt-2">
                       <span className="block text-xs text-gray-500 mb-1">Preview:</span>
-                      <img
+                      <OptimizedImage
                         src={imageFile ? imagePreview : formData.imagen}
                         alt="Preview"
+                        width={128}
+                        height={128}
                         className="w-32 h-32 object-contain border rounded-lg bg-gray-50 shadow"
                       />
                     </div>

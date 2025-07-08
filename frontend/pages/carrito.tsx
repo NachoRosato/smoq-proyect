@@ -7,7 +7,6 @@ import CartStep2 from '../components/CartStep2'
 import CartStep3 from '../components/CartStep3'
 import Link from 'next/link'
 import FloatingWhatsAppButton from '../components/FloatingWhatsAppButton'
-import { ShoppingBag } from 'lucide-react'
 
 export default function Carrito() {
   const { state } = useCart()
@@ -72,7 +71,7 @@ export default function Carrito() {
           {/* Progress Steps */}
           <div className="max-w-4xl mx-auto mb-8">
             <div className="flex items-center justify-between">
-              {[1, 2, 3].map((step, idx) => (
+              {[1, 2, 3].map((step) => (
                 <div key={step} className="flex items-center">
                   <div
                     className="flex items-center justify-center w-10 h-10 rounded-full"
