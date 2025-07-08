@@ -414,7 +414,7 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
-                          {getCategoriaNombre(producto.categoria, categorias)}
+                          {producto.categoria && producto.categoria.nombre ? producto.categoria.nombre : 'Sin categoría'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
