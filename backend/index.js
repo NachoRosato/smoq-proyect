@@ -39,9 +39,9 @@ app.use(helmet());
 app.use(limiter);
 
 // Rutas
-app.use("/auth", authRoutes);
-app.use("/productos", productosRoutes);
-app.use("/pedidos", pedidosRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/productos", productosRoutes);
+app.use("/api/pedidos", pedidosRoutes);
 app.use("/api/config", configRoutes);
 
 // Ruta de prueba
