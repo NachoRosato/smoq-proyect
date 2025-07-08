@@ -24,9 +24,9 @@ const productoSchema = new mongoose.Schema(
       required: [true, "La imagen es requerida"],
     },
     categoria: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Categoria",
       required: [true, "La categoría es requerida"],
-      enum: ["ropa", "accesorios", "calzado", "otros"],
     },
     stock: {
       type: Number,
@@ -38,6 +38,12 @@ const productoSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    gustos: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Gusto",
+      },
+    ],
   },
   {
     timestamps: true,

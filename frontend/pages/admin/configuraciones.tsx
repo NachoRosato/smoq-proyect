@@ -4,10 +4,36 @@ import toast from 'react-hot-toast'
 import { configApi } from '../../utils/api'
 import { useAuth } from '../../context/AuthContext'
 
+// Nueva API para categorías
+const categoriasApi = {
+  get: async (token: string) => fetch('/api/config/categorias', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+  create: async (nombre: string, descripcion: string, token: string) => fetch('/api/config/categorias', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ nombre, descripcion }) }).then(r => r.json()),
+  update: async (id: string, nombre: string, descripcion: string, token: string) => fetch(`/api/config/categorias/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ nombre, descripcion }) }).then(r => r.json()),
+  delete: async (id: string, token: string) => fetch(`/api/config/categorias/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+};
+
+// API para gustos
+const gustosApi = {
+  get: async (token: string) => fetch('/api/config/gustos', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+  create: async (nombre: string, descripcion: string, token: string) => fetch('/api/config/gustos', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ nombre, descripcion }) }).then(r => r.json()),
+  update: async (id: string, nombre: string, descripcion: string, token: string) => fetch(`/api/config/gustos/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ nombre, descripcion }) }).then(r => r.json()),
+  delete: async (id: string, token: string) => fetch(`/api/config/gustos/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+};
+
 export default function Configuraciones() {
   const { auth } = useAuth()
   const [minFreeShipping, setMinFreeShipping] = useState(25000)
   const [loading, setLoading] = useState(false)
+  const [categorias, setCategorias] = useState<any[]>([])
+  const [catNombre, setCatNombre] = useState('')
+  const [catDesc, setCatDesc] = useState('')
+  const [catEdit, setCatEdit] = useState<any>(null)
+  const [catLoading, setCatLoading] = useState(false)
+  const [gustos, setGustos] = useState<any[]>([])
+  const [gustoNombre, setGustoNombre] = useState('')
+  const [gustoDesc, setGustoDesc] = useState('')
+  const [gustoEdit, setGustoEdit] = useState<any>(null)
+  const [gustoLoading, setGustoLoading] = useState(false)
 
   useEffect(() => {
     configApi.get().then(res => {
@@ -23,8 +49,39 @@ export default function Configuraciones() {
     })
   }, [])
 
+  // Cargar categorías
+  useEffect(() => {
+    if (!auth.token) return
+    categoriasApi.get(auth.token || '').then(setCategorias)
+  }, [auth.token])
+
+  // Cargar gustos
+  useEffect(() => {
+    if (!auth.token) return
+    gustosApi.get(auth.token || '').then(setGustos)
+  }, [auth.token])
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validaciones completas
+    const errors = []
+    
+    // Validar monto mínimo de envío gratis
+    if (!minFreeShipping || minFreeShipping <= 0) {
+      errors.push('El monto mínimo para envío gratis debe ser mayor a 0')
+    } else if (minFreeShipping < 1000) {
+      errors.push('El monto mínimo para envío gratis debe ser al menos $1,000')
+    } else if (minFreeShipping > 1000000) {
+      errors.push('El monto mínimo para envío gratis no puede ser mayor a $1,000,000')
+    }
+    
+    // Si hay errores, mostrar el primero y no guardar
+    if (errors.length > 0) {
+      toast.error(errors[0])
+      return
+    }
+    
     setLoading(true)
     try {
       const res = await configApi.update(minFreeShipping, auth.token || '')
@@ -40,31 +97,239 @@ export default function Configuraciones() {
     }
   }
 
+  const handleCatSave = async (e: any) => {
+    e.preventDefault()
+    setCatLoading(true)
+    try {
+      let res
+      if (catEdit) {
+        res = await categoriasApi.update(catEdit._id, catNombre, catDesc, auth.token || '')
+      } else {
+        res = await categoriasApi.create(catNombre, catDesc, auth.token || '')
+      }
+      if (res && !res.error) {
+        toast.success(catEdit ? 'Categoría actualizada' : 'Categoría creada')
+        setCatNombre('')
+        setCatDesc('')
+        setCatEdit(null)
+        setCategorias(await categoriasApi.get(auth.token || ''))
+      } else {
+        toast.error(res.error || 'Error')
+      }
+    } finally {
+      setCatLoading(false)
+    }
+  }
+
+  const handleCatEdit = (cat: any) => {
+    setCatEdit(cat)
+    setCatNombre(cat.nombre)
+    setCatDesc(cat.descripcion || '')
+  }
+
+  const handleCatDelete = async (id: string) => {
+    if (!window.confirm('¿Eliminar esta categoría?')) return
+    setCatLoading(true)
+    try {
+      const res = await categoriasApi.delete(id, auth.token || '')
+      if (res && !res.error) {
+        toast.success('Categoría eliminada')
+        setCategorias(await categoriasApi.get(auth.token || ''))
+      } else {
+        toast.error(res.error || 'Error')
+      }
+    } finally {
+      setCatLoading(false)
+    }
+  }
+
+  const handleGustoSave = async (e: any) => {
+    e.preventDefault()
+    setGustoLoading(true)
+    try {
+      let res
+      if (gustoEdit) {
+        res = await gustosApi.update(gustoEdit._id, gustoNombre, gustoDesc, auth.token || '')
+      } else {
+        res = await gustosApi.create(gustoNombre, gustoDesc, auth.token || '')
+      }
+      if (res && !res.error) {
+        toast.success(gustoEdit ? 'Gusto actualizado' : 'Gusto creado')
+        setGustoNombre('')
+        setGustoDesc('')
+        setGustoEdit(null)
+        setGustos(await gustosApi.get(auth.token || ''))
+      } else {
+        toast.error(res.error || 'Error')
+      }
+    } finally {
+      setGustoLoading(false)
+    }
+  }
+
+  const handleGustoEdit = (g: any) => {
+    setGustoEdit(g)
+    setGustoNombre(g.nombre)
+    setGustoDesc(g.descripcion || '')
+  }
+
+  const handleGustoDelete = async (id: string) => {
+    if (!window.confirm('¿Eliminar este gusto?')) return
+    setGustoLoading(true)
+    try {
+      const res = await gustosApi.delete(id, auth.token || '')
+      if (res && !res.error) {
+        toast.success('Gusto eliminado')
+        setGustos(await gustosApi.get(auth.token || ''))
+      } else {
+        toast.error(res.error || 'Error')
+      }
+    } finally {
+      setGustoLoading(false)
+    }
+  }
+
   return (
     <AdminLayout>
-      <div className="max-w-xl mx-auto mt-10 bg-white p-8 rounded-xl shadow">
+      <div className="max-w-xl mx-auto mt-10 bg-white p-8 rounded-xl shadow mb-10">
         <h1 className="text-2xl font-bold mb-6">Configuraciones de la Tienda</h1>
         <form onSubmit={handleSave} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Monto mínimo para envío gratis
             </label>
-            <input
-              type="number"
-              min={0}
-              value={minFreeShipping}
-              onChange={e => setMinFreeShipping(Number(e.target.value))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
+            <div className="relative">
+              <input
+                type="number"
+                min={1000}
+                max={1000000}
+                value={minFreeShipping}
+                onChange={e => setMinFreeShipping(Number(e.target.value))}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-amber-500 bg-white ${
+                  minFreeShipping && (minFreeShipping <= 0 || minFreeShipping < 1000 || minFreeShipping > 1000000)
+                    ? 'border-red-300 focus:ring-red-500'
+                    : 'border-gray-300 focus:ring-amber-500'
+                }`}
+              />
+            </div>
+            <p className="mt-2 text-sm text-gray-500">
+              Monto mínimo que debe alcanzar el carrito para que el envío sea gratuito.
+            </p>
+            {minFreeShipping && (minFreeShipping <= 0 || minFreeShipping < 1000 || minFreeShipping > 1000000) && (
+              <div className="mt-1 text-sm text-red-600">
+                ⚠️ El monto debe estar entre $1,000 y $1,000,000
+              </div>
+            )}
           </div>
+
           <button
             type="submit"
-            className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-primary-700 transition-colors"
+            className="w-full bg-gray-900 text-white py-3 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={loading}
           >
-            {loading ? 'Guardando...' : 'Guardar cambios'}
+            {loading ? 'Guardando...' : 'Guardar configuración'}
           </button>
         </form>
+      </div>
+      {/* Gestión de categorías */}
+      <div className="max-w-xl mx-auto mb-10 bg-white p-8 rounded-xl shadow">
+        <h2 className="text-xl font-bold mb-4">Categorías de productos</h2>
+        <form onSubmit={handleCatSave} className="flex flex-col gap-3 mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Nombre"
+              value={catNombre}
+              onChange={e => setCatNombre(e.target.value)}
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-500 bg-white border-gray-300"
+              required
+              maxLength={50}
+            />
+            <span className="absolute right-3 top-2 text-xs text-gray-400">{catNombre.length}/50</span>
+          </div>
+          <p className="mt-1 text-sm text-gray-500">Nombre de la categoría. Máximo 50 caracteres.</p>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Descripción (opcional)"
+              value={catDesc}
+              onChange={e => setCatDesc(e.target.value)}
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-500 bg-white border-gray-300"
+              maxLength={200}
+            />
+            <span className="absolute right-3 top-2 text-xs text-gray-400">{catDesc.length}/200</span>
+          </div>
+          <p className="mt-1 text-sm text-gray-500">Descripción opcional. Máximo 200 caracteres.</p>
+          <div className="flex gap-2">
+            <button type="submit" className="w-full bg-gray-900 text-white py-3 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled={catLoading}>{catEdit ? 'Actualizar' : 'Agregar'}</button>
+            {catEdit && <button type="button" className="w-full bg-gray-300 text-gray-500 py-3 rounded-lg font-semibold text-lg hover:bg-gray-400 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => { setCatEdit(null); setCatNombre(''); setCatDesc(''); }}>Cancelar</button>}
+          </div>
+        </form>
+        <ul className="divide-y">
+          {categorias.map(cat => (
+            <li key={cat._id} className="py-2 flex justify-between items-center">
+              <div>
+                <span className="font-semibold">{cat.nombre}</span>
+                {cat.descripcion && <span className="ml-2 text-gray-500 text-sm">{cat.descripcion}</span>}
+              </div>
+              <div className="flex gap-2">
+                <button className="text-blue-600 hover:underline" onClick={() => handleCatEdit(cat)}>Editar</button>
+                <button className="text-red-600 hover:underline" onClick={() => handleCatDelete(cat._id)}>Eliminar</button>
+              </div>
+            </li>
+          ))}
+          {categorias.length === 0 && <li className="text-gray-500">No hay categorías</li>}
+        </ul>
+      </div>
+      {/* Gestión de gustos */}
+      <div className="max-w-xl mx-auto mb-10 bg-white p-8 rounded-xl shadow">
+        <h2 className="text-xl font-bold mb-4">Gustos (sabores/opciones)</h2>
+        <form onSubmit={handleGustoSave} className="flex flex-col gap-3 mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Nombre"
+              value={gustoNombre}
+              onChange={e => setGustoNombre(e.target.value)}
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-500 bg-white border-gray-300"
+              required
+              maxLength={50}
+            />
+            <span className="absolute right-3 top-2 text-xs text-gray-400">{gustoNombre.length}/50</span>
+          </div>
+          <p className="mt-1 text-sm text-gray-500">Nombre del gusto. Máximo 50 caracteres.</p>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Descripción (opcional)"
+              value={gustoDesc}
+              onChange={e => setGustoDesc(e.target.value)}
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-500 bg-white border-gray-300"
+              maxLength={200}
+            />
+            <span className="absolute right-3 top-2 text-xs text-gray-400">{gustoDesc.length}/200</span>
+          </div>
+          <p className="mt-1 text-sm text-gray-500">Descripción opcional. Máximo 200 caracteres.</p>
+          <div className="flex gap-2">
+            <button type="submit" className="w-full bg-gray-900 text-white py-3 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled={gustoLoading}>{gustoEdit ? 'Actualizar' : 'Agregar'}</button>
+            {gustoEdit && <button type="button" className="w-full bg-gray-300 text-gray-500 py-3 rounded-lg font-semibold text-lg hover:bg-gray-400 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => { setGustoEdit(null); setGustoNombre(''); setGustoDesc(''); }}>Cancelar</button>}
+          </div>
+        </form>
+        <ul className="divide-y">
+          {gustos.map(g => (
+            <li key={g._id} className="py-2 flex justify-between items-center">
+              <div>
+                <span className="font-semibold">{g.nombre}</span>
+                {g.descripcion && <span className="ml-2 text-gray-500 text-sm">{g.descripcion}</span>}
+              </div>
+              <div className="flex gap-2">
+                <button className="text-blue-600 hover:underline" onClick={() => handleGustoEdit(g)}>Editar</button>
+                <button className="text-red-600 hover:underline" onClick={() => handleGustoDelete(g._id)}>Eliminar</button>
+              </div>
+            </li>
+          ))}
+          {gustos.length === 0 && <li className="text-gray-500">No hay gustos</li>}
+        </ul>
       </div>
     </AdminLayout>
   )

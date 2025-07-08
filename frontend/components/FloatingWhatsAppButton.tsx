@@ -1,13 +1,31 @@
 import { useEffect, useState } from 'react'
+import { configApi } from '../utils/api'
 
 export default function FloatingWhatsAppButton() {
   const [visible, setVisible] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [numeroWhatsapp, setNumeroWhatsapp] = useState('')
 
   useEffect(() => {
     // Animación de aparición al montar
     setTimeout(() => setVisible(true), 300)
+    // Obtener número de WhatsApp del backend
+    configApi.get().then(res => {
+      console.log('res', res);
+      if (res.success && res.config?.whatsappNumber) {
+        setNumeroWhatsapp(res.config.whatsappNumber)
+      }
+    })
   }, [])
+
+  const handleClick = () => {
+    console.log('numeroWhatsapp', numeroWhatsapp);
+    if (!numeroWhatsapp) return
+    const numeroLimpio = numeroWhatsapp.replace(/[^0-9]/g, '')
+    const mensaje = encodeURIComponent('Hola! Quiero hacer una consulta!')
+    const url = `https://wa.me/${numeroLimpio}?text=${mensaje}`
+    window.open(url, '_blank')
+  }
 
   return (
     <div
@@ -15,9 +33,12 @@ export default function FloatingWhatsAppButton() {
         ${visible ? 'opacity-100 scale-100 animate-bounce-in' : 'opacity-0 scale-75 pointer-events-none'}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleClick}
+      title="Consultar por WhatsApp"
     >
       {/* Círculo principal */}
       <div
+        
         className="relative bg-black rounded-full shadow-xl transition-all duration-300 ease-out"
         style={{ 
           width: '60px',
@@ -48,6 +69,7 @@ export default function FloatingWhatsAppButton() {
         {/* Triangulito del diálogo - pegado al círculo */}
         <div 
           className="absolute transition-all duration-300"
+        
           style={{
             width: '0',
             height: '0',

@@ -115,7 +115,25 @@ export const configApi = {
       // Retornar configuración por defecto si falla
       return {
         success: true,
-        config: { minFreeShipping: 25000 }
+        config: { 
+          minFreeShipping: 25000, 
+          whatsappNumber: "",
+          whatsappTitle: "Nuevo Pedido - SMOQ",
+          whatsappDescription: "Somos SMOQ y acabas de tomar la mejor decisión de tu vida. Gracias por elegirnos!",
+          whatsappGoodbye: "Enviado desde la tienda online"
+        }
+      }
+    }
+  },
+  getWhatsApp: async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/config`)
+      return res.data
+    } catch (error) {
+      console.warn('Error obteniendo configuración de WhatsApp:', error)
+      return {
+        success: false,
+        error: 'Error al obtener configuración de WhatsApp'
       }
     }
   },
@@ -130,6 +148,39 @@ export const configApi = {
       return {
         success: false,
         error: 'Error al actualizar configuración'
+      }
+    }
+  },
+  updateWhatsApp: async (whatsappNumber: string, token: string) => {
+    try {
+      const res = await axios.put(`${API_URL}/api/config`, { whatsappNumber }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      return res.data
+    } catch (error) {
+      console.error('Error actualizando configuración de WhatsApp:', error)
+      return {
+        success: false,
+        error: 'Error al actualizar configuración de WhatsApp'
+      }
+    }
+  },
+  updateWhatsAppMessage: async (whatsappData: {
+    whatsappNumber?: string,
+    whatsappTitle?: string,
+    whatsappDescription?: string,
+    whatsappGoodbye?: string
+  }, token: string) => {
+    try {
+      const res = await axios.put(`${API_URL}/api/config`, whatsappData, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      return res.data
+    } catch (error) {
+      console.error('Error actualizando mensaje de WhatsApp:', error)
+      return {
+        success: false,
+        error: 'Error al actualizar mensaje de WhatsApp'
       }
     }
   }

@@ -1,6 +1,13 @@
 import { ShoppingCart } from 'lucide-react'
 import { formatPrice } from '../lib/helpers'
 import OptimizedImage from './OptimizedImage'
+import { useState } from 'react'
+
+interface Gusto {
+  _id: string
+  nombre: string
+  descripcion?: string
+}
 
 interface Producto {
   _id: string
@@ -8,16 +15,29 @@ interface Producto {
   precio: number
   descripcion: string
   imagen: string
-  categoria: string
+  categoria: { _id: string; nombre: string }
   stock: number
+  gustos?: { _id: string; nombre: string; descripcion?: string }[]
 }
 
 interface ProductCardProps {
   producto: Producto
-  onAddToCart: () => void
+  onAddToCart: (gustoId?: string) => void
 }
 
 export default function ProductCard({ producto, onAddToCart }: ProductCardProps) {
+  const [selectedGusto, setSelectedGusto] = useState<string>('')
+  const [error, setError] = useState<string>('')
+
+  const handleAdd = () => {
+    if (producto.gustos && producto.gustos.length > 0 && !selectedGusto) {
+      setError('Seleccioná un gusto para este producto')
+      return
+    }
+    setError('')
+    onAddToCart(selectedGusto)
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
       {/* Imagen */}
@@ -41,7 +61,7 @@ export default function ProductCard({ producto, onAddToCart }: ProductCardProps)
         {/* Categoría */}
         <div className="mb-2">
           <span className="inline-block bg-primary-100 text-primary-800 text-xs font-medium px-2 py-1 rounded-full">
-            {producto.categoria.charAt(0).toUpperCase() + producto.categoria.slice(1)}
+            {producto.categoria.nombre.charAt(0).toUpperCase() + producto.categoria.nombre.slice(1)}
           </span>
         </div>
 
@@ -55,6 +75,24 @@ export default function ProductCard({ producto, onAddToCart }: ProductCardProps)
           {producto.descripcion}
         </p>
 
+        {/* Select de gusto si aplica */}
+        {producto.gustos && producto.gustos.length > 0 && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1 text-primary-800">Gusto</label>
+            <select
+              value={selectedGusto}
+              onChange={e => setSelectedGusto(e.target.value)}
+              className="w-full border-2 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400 border-yellow-400 text-primary-800 bg-white"
+            >
+              <option value="">Seleccioná un gusto</option>
+              {producto.gustos.map(g => (
+                <option key={g._id} value={g._id}>{g.nombre}</option>
+              ))}
+            </select>
+            {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+          </div>
+        )}
+
         {/* Precio y botón */}
         <div className="flex items-center justify-between">
           <div className="text-2xl font-bold text-primary-600">
@@ -62,7 +100,7 @@ export default function ProductCard({ producto, onAddToCart }: ProductCardProps)
           </div>
           
           <button
-            onClick={onAddToCart}
+            onClick={handleAdd}
             disabled={producto.stock === 0}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
               producto.stock === 0

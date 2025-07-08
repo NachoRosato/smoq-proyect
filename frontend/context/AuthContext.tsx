@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://smoq-proyect-production.up.railway.app'}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

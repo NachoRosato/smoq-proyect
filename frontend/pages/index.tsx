@@ -8,15 +8,29 @@ import Navbar from '../components/Navbar'
 import toast from 'react-hot-toast'
 import { Listbox } from '@headlessui/react'
 import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/24/outline'
+import Image from 'next/image'
+import FloatingWhatsAppButton from '../components/FloatingWhatsAppButton'
 
-interface Producto {
+interface Gusto {
+  _id: string
+  nombre: string
+  descripcion?: string
+}
+
+interface Categoria {
+  _id: string
+  nombre: string
+}
+
+export interface Producto {
   _id: string
   nombre: string
   precio: number
   descripcion: string
   imagen: string
-  categoria: string
+  categoria: { _id: string; nombre: string }
   stock: number
+  gustos?: { _id: string; nombre: string; descripcion?: string }[]
 }
 
 interface ProductosApiResponse {
@@ -52,10 +66,14 @@ export default function Home() {
   const loadProductos = async () => {
     try {
       setLoading(true)
-      const response = await productosApi.getAll() as { success: boolean, data?: ProductosApiResponse }
+      console.log('Cargando productos...')
+      const response = await productosApi.getAll() as { success: boolean, data?: Producto[] }
+      console.log('Respuesta de la API:', response)
       if (response.success && response.data) {
-        setProductos(response.data.productos || [])
+        console.log('Productos cargados:', response.data)
+        setProductos(response.data || [])
       } else {
+        console.log('Error en la respuesta:', response)
         toast.error('Error al cargar productos')
       }
     } catch (error) {
@@ -66,8 +84,8 @@ export default function Home() {
     }
   }
 
-  const handleAddToCart = (producto: Producto) => {
-    addItem(producto)
+  const handleAddToCart = (producto: Producto, gustoId?: string) => {
+    addItem(producto, gustoId)
     toast.success(`${producto.nombre} agregado al carrito`)
   }
 
@@ -97,11 +115,16 @@ export default function Home() {
   const filteredProductos = productos.filter(producto => {
     const matchesSearch = producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          producto.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = !selectedCategory || producto.categoria === selectedCategory
+    const matchesCategory = !selectedCategory || producto.categoria.nombre === selectedCategory
     return matchesSearch && matchesCategory
   })
 
   const cartItemCount = state.items.reduce((total, item) => total + item.cantidad, 0)
+
+  console.log('Productos en estado:', productos)
+  console.log('Productos filtrados:', filteredProductos)
+  console.log('Search term:', searchTerm)
+  console.log('Selected category:', selectedCategory)
 
   return (
     <>
@@ -115,18 +138,26 @@ export default function Home() {
         <Navbar />
         
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 text-white">
-          <div className="absolute inset-0 bg-black opacity-10"></div>
+        <section className="relative overflow-hidden" style={{background: 'linear-gradient(to right, rgb(0 0 0) 0%, rgb(0 0 0) 50%, rgb(147 133 90) 100%)'}}>
+          <div className="absolute inset-0" style={{background: 'rgba(0,0,0,0.08)'}}></div>
           <div className="relative container mx-auto px-4 py-16 lg:py-24">
             <div className="text-center max-w-4xl mx-auto">
-              <div className="flex items-center justify-center mb-6">
-                <Sparkles className="w-8 h-8 mr-3 animate-pulse" />
-                <h1 className="text-5xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-primary-200 bg-clip-text text-transparent">
+              <div className="flex items-center justify-center mb-6 gap-4">
+                {/*
+                <Image
+                  src="/images/logo_empresa_2.png"
+                  alt="Logo empresa 2"
+                  width={140}
+                  height={140}
+                  className="h-[100px] w-auto"
+                  priority
+                />
+                */}
+                <h1 className="text-5xl lg:text-7xl font-bold text-white leading-none">
                   SMOQ
                 </h1>
-                <Sparkles className="w-8 h-8 ml-3 animate-pulse" />
               </div>
-              <p className="text-xl lg:text-2xl text-primary-100 mb-8 leading-relaxed">
+              <p className="text-xl lg:text-2xl text-white mb-8 leading-relaxed">
                 Descubre productos únicos que cuentan historias. 
                 <br />
                 <span className="font-semibold">Calidad, estilo y atención personalizada.</span>
@@ -134,20 +165,26 @@ export default function Home() {
               
               {/* Stats */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-                <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20 transition-all duration-300 hover:border-opacity-40 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                  <TrendingUp className="w-8 h-8 mx-auto mb-3 text-primary-200" />
-                  <div className="text-2xl font-bold">+10.000</div>
-                  <div className="text-primary-200">Productos Vendidos</div>
+                <div
+                  className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-6 border-2 border-white border-opacity-30 transition-all duration-300 hover:scale-105 hover:border-opacity-100 cursor-pointer hover-brown-shadow"
+                >
+                  <TrendingUp className="w-10 h-10 mx-auto mb-3" style={{ color: 'rgb(147, 133, 90)' }} />
+                  <div className="text-3xl font-extrabold text-white drop-shadow-lg">+10.000</div>
+                  <div className="text-base font-semibold text-white">Productos Vendidos</div>
                 </div>
-                <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20 transition-all duration-300 hover:border-opacity-40 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                  <Star className="w-8 h-8 mx-auto mb-3 text-primary-200" />
-                  <div className="text-2xl font-bold">4.9/5</div>
-                  <div className="text-primary-200">Satisfacción</div>
+                <div
+                  className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-6 border-2 border-white border-opacity-30 transition-all duration-300 hover:scale-105 hover:border-opacity-100 cursor-pointer hover-brown-shadow"
+                >
+                  <Star className="w-10 h-10 mx-auto mb-3" style={{ color: 'rgb(147, 133, 90)' }} />
+                  <div className="text-3xl font-extrabold text-white drop-shadow-lg">4.9/5</div>
+                  <div className="text-base font-semibold text-white">Satisfacción</div>
                 </div>
-                <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20 transition-all duration-300 hover:border-opacity-40 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                  <Zap className="w-8 h-8 mx-auto mb-3 text-primary-200" />
-                  <div className="text-2xl font-bold">24hs</div>
-                  <div className="text-primary-200">Envío Rápido</div>
+                <div
+                  className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-6 border-2 border-white border-opacity-30 transition-all duration-300 hover:scale-105 hover:border-opacity-100 cursor-pointer hover-brown-shadow"
+                >
+                  <Zap className="w-10 h-10 mx-auto mb-3" style={{ color: 'rgb(147, 133, 90)' }} />
+                  <div className="text-3xl font-extrabold text-white drop-shadow-lg">24hs</div>
+                  <div className="text-base font-semibold text-white">Envío Rápido</div>
                 </div>
               </div>
             </div>
@@ -156,9 +193,8 @@ export default function Home() {
           {/* Wave separator */}
           <div className="absolute bottom-0 left-0 right-0">
             <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-12 rotate-180">
-              <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" fill="currentColor"></path>
-              <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5" fill="currentColor"></path>
-              <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" fill="currentColor"></path>
+              <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" fill="#FFF9E1" />
+              <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5" fill="#FFF1B8" />
             </svg>
           </div>
         </section>
@@ -353,7 +389,7 @@ export default function Home() {
                     >
                       <ProductCard
                         producto={producto}
-                        onAddToCart={() => handleAddToCart(producto)}
+                        onAddToCart={(gustoId) => handleAddToCart(producto, gustoId)}
                       />
                     </div>
                   ))}
@@ -376,10 +412,10 @@ export default function Home() {
         <section className="bg-gray-900 text-white py-16">
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-3xl font-bold mb-4">
-              ¿No encuentras lo que buscas?
+              ¿No encontrás lo que buscas?
             </h2>
             <p className="text-gray-300 mb-8 max-w-2xl mx-auto">
-              Contáctanos y te ayudaremos a encontrar el producto perfecto para ti
+              Contáctanos y te ayudaremos a encontrar el producto perfecto para vos
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button 
@@ -491,7 +527,13 @@ export default function Home() {
             </div>
           </div>
         )}
+        <FloatingWhatsAppButton />
       </div>
+      <style jsx>{`
+        .hover-brown-shadow:hover {
+          box-shadow: 0 4px 32px 0 rgba(255,255,255,0.18);
+        }
+      `}</style>
     </>
   )
 } 

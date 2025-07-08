@@ -5,6 +5,23 @@ import { useEffect, useRef, useState } from 'react'
 import OptimizedImage from './OptimizedImage'
 import { configApi } from '../utils/api'
 
+interface Gusto {
+  _id: string
+  nombre: string
+  descripcion?: string
+}
+
+interface Producto {
+  _id: string
+  nombre: string
+  precio: number
+  descripcion: string
+  imagen: string
+  categoria: string
+  stock: number
+  gustos?: Gusto[]
+}
+
 interface SideCartProps {
   isOpen: boolean
   onClose: () => void
@@ -56,6 +73,7 @@ export default function SideCart({ isOpen, onClose, onCheckout }: Omit<SideCartP
   const total = subtotal - descuentos
   const faltante = Math.max(0, minFreeShipping - total)
   const progreso = Math.min(100, (total / minFreeShipping) * 100)
+  console.log({ total, minFreeShipping, progreso })
 
   return (
     <div className={`fixed inset-0 z-50 flex justify-end transition-all duration-300 ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
@@ -64,69 +82,117 @@ export default function SideCart({ isOpen, onClose, onCheckout }: Omit<SideCartP
       {/* Side Cart */}
       <div
         ref={cartRef}
-        className={`relative w-full max-w-md h-full bg-white shadow-2xl flex flex-col transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`relative w-full max-w-md h-full shadow-2xl flex flex-col transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        style={{
+          background: 'rgb(224 217 190)',
+          border: 'none'
+        }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <ShoppingCart className="w-7 h-7 text-primary-600" /> Tu Carrito
+        <div className="flex items-center justify-between p-6 border-b" style={{ border: 'none' }}>
+          <h2 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'black' }}>
+            <ShoppingCart className="w-7 h-7" style={{ color: '#7C4F00' }} /> Tu Carrito
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors">
+          <button onClick={onClose} className="p-2 rounded-full transition-all duration-200 hover:scale-110 hover:bg-amber-100" style={{ color: '#7C4F00' }}>
             <X className="w-7 h-7" />
           </button>
         </div>
 
         {/* Barra de progreso animada */}
         <div className="px-6 pt-4 pb-2">
-          <div className="flex justify-between items-center mb-1 text-sm font-medium">
+          <div className="flex justify-between items-center mb-1 text-sm font-medium" style={{ color: 'black' }}>
             <span>
               {faltante > 0
-                ? <>Agregá {formatPrice(faltante)} más y obtené <b>envío GRATIS</b></>
-                : <span className="text-green-600 font-bold">¡Ya tenés envío GRATIS! 🎉</span>
+                ? <>Agregá {formatPrice(faltante)} más y obtené <b style={{ color: 'white' }}>envío GRATIS</b></>
+                : <span className="font-bold" style={{ color: '#2E7D32' }}>¡Ya tenés envío GRATIS! 🎉</span>
               }
             </span>
           </div>
-          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+          <div className="w-full h-3 rounded-full overflow-hidden" style={{ background: '#fff8e6' }}>
             <div
-              className="h-full bg-gradient-to-r from-primary-400 to-primary-600 transition-all duration-700"
-              style={{ width: `${progreso}%` }}
+              className="h-full transition-[width] duration-700"
+              style={{ width: `${progreso}%`, background: 'linear-gradient(to right, rgb(209 159 82), rgb(0, 0, 0))' }}
             />
           </div>
         </div>
 
-        {/* Lista de productos */}
+        {/* Lista de productos mejorada */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {state.items.length === 0 ? (
-            <div className="text-center text-gray-500 py-16">
-              <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-primary-200" />
+            <div className="text-center py-16" style={{ color: 'black' }}>
+              <ShoppingCart className="w-12 h-12 mx-auto mb-4" style={{ color: '#7C4F00' }} />
               <p>Tu carrito está vacío</p>
             </div>
           ) : (
             state.items.map(item => (
-              <div key={item.producto._id} className="flex items-center gap-4 bg-gray-50 rounded-lg p-3 shadow-sm">
-                <OptimizedImage
-                  src={item.producto.imagen}
-                  alt={item.producto.nombre}
-                  width={64}
-                  height={64}
-                  className="rounded-lg object-cover w-16 h-16"
-                />
+              <div 
+                key={item.producto._id + (item.gustoId || '')} 
+                className="flex items-center gap-4 rounded-xl p-4 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+                style={{ 
+                  background: 'linear-gradient(135deg, #FFF9E1, #FFF1B8)', 
+                  border: '1px solid rgba(255, 219, 126, 0.3)',
+                  boxShadow: '0 2px 8px rgba(124, 79, 0, 0.1)'
+                }}
+              >
+                <div className="relative">
+                  <OptimizedImage
+                    src={item.producto.imagen}
+                    alt={item.producto.nombre}
+                    width={72}
+                    height={72}
+                    className="rounded-lg object-cover w-18 h-18 shadow-md"
+                  />
+                  <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: 'rgb(124, 79, 0)' }}>
+                    {item.cantidad}
+                  </div>
+                </div>
+                
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900 truncate">{item.producto.nombre}</div>
-                  <div className="text-xs text-gray-500 mb-1">{item.producto.categoria}</div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => updateQuantity(item.producto._id, item.cantidad - 1)} disabled={item.cantidad <= 1} className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50">
+                  <div className="font-bold truncate mb-1" style={{ color: 'black' }}>{item.producto.nombre}</div>
+                  <div className="text-xs mb-2 px-2 py-1 rounded-full inline-block" style={{ background: 'rgba(255, 184, 76, 0.2)', color: '#B88C3A' }}>
+                    {item.producto.categoria.nombre}
+                  </div>
+                  {item.gustoId && (
+                    <div className="text-xs mb-2 px-2 py-1 rounded-full inline-block" style={{ background: 'rgba(255, 184, 76, 0.2)', color: '#B88C3A' }}>
+                      Sabor: {Array.isArray(item.producto.gustos) ? item.producto.gustos.find((g: Gusto) => g._id === item.gustoId)?.nombre || 'Sin especificar' : 'Sin especificar'}
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-3 mt-3">
+                    <button 
+                      onClick={() => updateQuantity(item.producto._id, item.gustoId, item.cantidad - 1)} 
+                      disabled={item.cantidad <= 1} 
+                      className="w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed" 
+                      style={{ 
+                        border: '2px solid #FFDB7E', 
+                        color: '#B88C3A', 
+                        background: item.cantidad <= 1 ? 'rgba(255, 219, 126, 0.3)' : '#FFF1B8'
+                      }}
+                    >
                       <Minus className="w-4 h-4" />
                     </button>
-                    <span className="w-8 text-center font-medium">{item.cantidad}</span>
-                    <button onClick={() => updateQuantity(item.producto._id, item.cantidad + 1)} className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-100">
+                    <span className="w-10 text-center font-bold text-lg" style={{ color: '#7C4F00' }}>{item.cantidad}</span>
+                    <button 
+                      onClick={() => updateQuantity(item.producto._id, item.gustoId, item.cantidad + 1)} 
+                      className="w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110" 
+                      style={{ 
+                        border: '2px solid #FFDB7E', 
+                        color: '#B88C3A', 
+                        background: '#FFF1B8'
+                      }}
+                    >
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-                <div className="flex flex-col items-end">
-                  <span className="font-bold text-primary-600">{formatPrice(item.producto.precio * item.cantidad)}</span>
-                  <button onClick={() => removeItem(item.producto._id)} className="text-red-400 hover:text-red-600 mt-2">
+                
+                <div className="flex flex-col items-end gap-2">
+                  <span className="font-bold text-lg" style={{ color: '#7C4F00' }}>{formatPrice(item.producto.precio * item.cantidad)}</span>
+                  <button 
+                    onClick={() => removeItem(item.producto._id, item.gustoId)} 
+                    className="p-2 rounded-full transition-all duration-200 hover:scale-110 hover:bg-red-100" 
+                    style={{ color: '#B88C3A' }}
+                  >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -136,18 +202,18 @@ export default function SideCart({ isOpen, onClose, onCheckout }: Omit<SideCartP
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-100 bg-white">
+        <div className="p-6 border-t" style={{ borderTop: '2px solid white', background: 'rgba(255,249,225,0.95)' }}>
           <div className="flex justify-between items-center mb-2">
-            <span className="text-gray-500">Descuentos</span>
-            <span className="text-red-500 font-semibold">{formatPrice(descuentos)}</span>
+            <span style={{ color: 'black' }}>Descuentos</span>
+            <span className="font-semibold" style={{ color: 'black' }}>{formatPrice(descuentos)}</span>
           </div>
           <div className="flex justify-between items-center text-lg font-bold mb-4">
-            <span>Subtotal</span>
-            <span>{formatPrice(total)}</span>
+            <span style={{ color: '#7C4F00' }}>Subtotal</span>
+            <span style={{ color: '#7C4F00' }}>{formatPrice(total)}</span>
           </div>
           <button
             onClick={onCheckout}
-            className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 hover:bg-primary-700 transition-colors shadow-lg"
+            className="w-full bg-gray-900 text-white py-3 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-lg hover:bg-gray-800 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={state.items.length === 0}
           >
             FINALIZAR COMPRA

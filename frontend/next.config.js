@@ -26,6 +26,14 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   generateEtags: false,
+  async rewrites() {
+    return [
+      {
+        source: "/api/config/:path*",
+        destination: "http://localhost:3002/api/config/:path*",
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

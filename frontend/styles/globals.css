@@ -101,3 +101,16 @@
 .animate-bounce-in {
   animation: bounce-in 0.7s cubic-bezier(0.68, -0.55, 0.27, 1.55);
 }
+
+@keyframes spin-slow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 0.4s linear;
+}

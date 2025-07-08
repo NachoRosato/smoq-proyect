@@ -5,8 +5,9 @@ import { Toaster } from 'react-hot-toast'
 import '../styles/globals.css'
 import { SideCartProvider, useSideCart } from '../context/SideCartContext'
 import SideCart from '../components/SideCart'
-import FloatingWhatsAppButton from '../components/FloatingWhatsAppButton'
 import { useRouter } from 'next/router'
+import { SidebarProvider } from '../context/SidebarContext'
+import Head from 'next/head'
 
 // Componente wrapper que usa el hook dentro del provider
 function SideCartWrapper() {
@@ -23,25 +24,39 @@ function SideCartWrapper() {
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
+  const isAdmin = router.pathname.startsWith('/admin');
   return (
-    <AuthProvider>
-      <CartProvider>
-        <SideCartProvider>
-          <Component {...pageProps} />
-          <SideCartWrapper />
-          { !router.pathname.startsWith('/admin') && <FloatingWhatsAppButton /> }
-        </SideCartProvider>
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
-      </CartProvider>
-    </AuthProvider>
+    <>
+      <Head>
+        <link rel="icon" type="image/png" href="/images/logo_empresa_2.png" />
+      </Head>
+      <AuthProvider>
+        <CartProvider>
+          <SideCartProvider>
+            {isAdmin ? (
+              <SidebarProvider>
+                <Component {...pageProps} />
+                <SideCartWrapper />
+              </SidebarProvider>
+            ) : (
+              <>
+                <Component {...pageProps} />
+                <SideCartWrapper />
+              </>
+            )}
+          </SideCartProvider>
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+            }}
+          />
+        </CartProvider>
+      </AuthProvider>
+    </>
   )
 } 

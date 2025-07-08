@@ -6,6 +6,8 @@ import CartStep1 from '../components/CartStep1'
 import CartStep2 from '../components/CartStep2'
 import CartStep3 from '../components/CartStep3'
 import Link from 'next/link'
+import FloatingWhatsAppButton from '../components/FloatingWhatsAppButton'
+import { ShoppingBag } from 'lucide-react'
 
 export default function Carrito() {
   const { state } = useCart()
@@ -23,7 +25,7 @@ export default function Carrito() {
         <Head>
           <title>Carrito - SMOQ Tienda</title>
         </Head>
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen" style={{ backgroundColor: 'rgb(253 253 249)' }}>
           <Navbar />
           <div className="container mx-auto px-4 py-16">
             <div className="text-center">
@@ -33,11 +35,12 @@ export default function Carrito() {
               <p className="text-gray-600 mb-8">
                 Agrega algunos productos para continuar con tu compra.
               </p>
-              <Link href="/" className="btn-primary inline-block">
+              <Link href="/" className="inline-block bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
                 Ver productos
               </Link>
             </div>
           </div>
+          <FloatingWhatsAppButton />
         </div>
       </>
     )
@@ -62,41 +65,44 @@ export default function Carrito() {
         <title>Carrito - SMOQ Tienda</title>
       </Head>
       
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen" style={{ backgroundColor: 'rgb(224 217 190)' }}>
         <Navbar />
         
         <div className="container mx-auto px-4 py-8">
           {/* Progress Steps */}
           <div className="max-w-4xl mx-auto mb-8">
             <div className="flex items-center justify-between">
-              {[1, 2, 3].map((step) => (
+              {[1, 2, 3].map((step, idx) => (
                 <div key={step} className="flex items-center">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                    currentStep >= step 
-                      ? 'bg-primary-600 border-primary-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-500'
-                  }`}>
+                  <div
+                    className="flex items-center justify-center w-10 h-10 rounded-full"
+                    style={{ background: 'rgb(0, 0, 0)', color: 'white' }}
+                  >
                     {step}
                   </div>
                   {step < 3 && (
-                    <div className={`w-16 h-1 mx-4 ${
-                      currentStep > step ? 'bg-primary-600' : 'bg-gray-300'
-                    }`} />
+                    <svg
+                      width="80" height="8" viewBox="0 0 80 8" fill="none"
+                      className="mx-2"
+                      style={{ display: 'block' }}
+                    >
+                      <defs>
+                        <linearGradient id={`line-gradient-${step}`} x1="0" y1="4" x2="80" y2="4" gradientUnits="userSpaceOnUse">
+                          <stop stopColor="rgb(0, 0, 0)" />
+                          <stop offset="1" stopColor="rgb(0, 0, 0)" />
+                        </linearGradient>
+                      </defs>
+                      <polygon points="0,2 76,2 80,4 76,6 0,6" fill={`url(#line-gradient-${step})`} />
+                    </svg>
                   )}
                 </div>
               ))}
             </div>
             
-            <div className="flex justify-between mt-4 text-sm text-gray-600">
-              <span className={currentStep >= 1 ? 'text-primary-600 font-medium' : ''}>
-                Productos
-              </span>
-              <span className={currentStep >= 2 ? 'text-primary-600 font-medium' : ''}>
-                Contacto
-              </span>
-              <span className={currentStep >= 3 ? 'text-primary-600 font-medium' : ''}>
-                Confirmación
-              </span>
+            <div className="flex justify-between mt-4 text-sm" style={{ color: 'rgb(0, 0, 0)' }}>
+              <span className="font-medium">Productos</span>
+              <span>Contacto</span>
+              <span>Confirmación</span>
             </div>
           </div>
 
@@ -123,6 +129,7 @@ export default function Carrito() {
               />
             )}
           </div>
+          <FloatingWhatsAppButton />
         </div>
       </div>
     </>

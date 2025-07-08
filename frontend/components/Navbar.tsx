@@ -70,7 +70,7 @@ export default function Navbar() {
           {/* Mobile menu button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 text-gray-800 hover:text-white transition-colors"
+            className="md:hidden p-2 text-white hover:text-white transition-colors"
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -78,30 +78,14 @@ export default function Navbar() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-300 py-4" style={{
-            background: 'linear-gradient(to right, white 0%, white 20%, #333333 50%, #1a1a1a 100%)'
-          }}>
-            <div className="flex flex-col space-y-4">
-              <Link 
-                href="/" 
-                className="text-white hover:text-gray-200 transition-colors px-4 py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Productos
-              </Link>
-              <Link 
-                href="/carrito" 
-                className="text-white hover:text-gray-200 transition-colors px-4 py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Carrito ({cartItemCount})
-              </Link>
-              <Link 
-                href="/admin/login" 
-                className="text-white hover:text-gray-200 transition-colors px-4 py-2 flex items-center space-x-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <User className="w-4 h-4" />
+          <div
+            className="md:hidden absolute left-0 right-0 mx-4 mt-6 border border-gray-700 bg-black rounded-lg shadow-2xl z-50 transition-all duration-300 opacity-100 translate-y-0"
+          >
+            <div className="flex flex-col space-y-2 p-4">
+              <Link className="text-white px-4 py-3 rounded hover:bg-gray-800 transition-colors" href="/">Productos</Link>
+              <Link className="text-white px-4 py-3 rounded hover:bg-gray-800 transition-colors" href="/carrito/">Carrito (11)</Link>
+              <Link className="text-white px-4 py-3 rounded hover:bg-gray-800 transition-colors flex items-center space-x-2" href="/admin/login/">
+                {/* icono */}
                 <span>Admin</span>
               </Link>
             </div>

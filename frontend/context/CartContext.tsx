@@ -1,18 +1,10 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react'
-
-export interface Producto {
-  _id: string
-  nombre: string
-  precio: number
-  descripcion: string
-  imagen: string
-  categoria: string
-  stock: number
-}
+import type { Producto } from '../pages/index'
 
 export interface CartItem {
   producto: Producto
   cantidad: number
+  gustoId?: string
 }
 
 interface CartState {
@@ -21,9 +13,9 @@ interface CartState {
 }
 
 type CartAction =
-  | { type: 'ADD_ITEM'; payload: Producto }
-  | { type: 'REMOVE_ITEM'; payload: string }
-  | { type: 'UPDATE_QUANTITY'; payload: { id: string; cantidad: number } }
+  | { type: 'ADD_ITEM'; payload: { producto: Producto; gustoId?: string } }
+  | { type: 'REMOVE_ITEM'; payload: { id: string; gustoId?: string } }
+  | { type: 'UPDATE_QUANTITY'; payload: { id: string; gustoId?: string; cantidad: number } }
   | { type: 'CLEAR_CART' }
   | { type: 'LOAD_CART'; payload: CartState }
 
@@ -35,61 +27,54 @@ const initialState: CartState = {
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case 'ADD_ITEM': {
-      const existingItem = state.items.find(item => item.producto._id === action.payload._id)
-      
+      const { producto, gustoId } = action.payload
+      const existingItem = state.items.find(item => item.producto._id === producto._id && item.gustoId === gustoId)
       if (existingItem) {
         return {
           ...state,
           items: state.items.map(item =>
-            item.producto._id === action.payload._id
+            item.producto._id === producto._id && item.gustoId === gustoId
               ? { ...item, cantidad: item.cantidad + 1 }
               : item
           ),
-          total: state.total + action.payload.precio
+          total: state.total + producto.precio
         }
       }
-      
       return {
         ...state,
-        items: [...state.items, { producto: action.payload, cantidad: 1 }],
-        total: state.total + action.payload.precio
+        items: [...state.items, { producto, cantidad: 1, gustoId }],
+        total: state.total + producto.precio
       }
     }
-    
     case 'REMOVE_ITEM': {
-      const item = state.items.find(item => item.producto._id === action.payload)
+      const { id, gustoId } = action.payload
+      const item = state.items.find(item => item.producto._id === id && item.gustoId === gustoId)
       if (!item) return state
-      
       return {
         ...state,
-        items: state.items.filter(item => item.producto._id !== action.payload),
+        items: state.items.filter(item => !(item.producto._id === id && item.gustoId === gustoId)),
         total: state.total - (item.producto.precio * item.cantidad)
       }
     }
-    
     case 'UPDATE_QUANTITY': {
-      const item = state.items.find(item => item.producto._id === action.payload.id)
+      const { id, gustoId, cantidad } = action.payload
+      const item = state.items.find(item => item.producto._id === id && item.gustoId === gustoId)
       if (!item) return state
-      
-      const quantityDiff = action.payload.cantidad - item.cantidad
-      
+      const quantityDiff = cantidad - item.cantidad
       return {
         ...state,
         items: state.items.map(item =>
-          item.producto._id === action.payload.id
-            ? { ...item, cantidad: action.payload.cantidad }
+          item.producto._id === id && item.gustoId === gustoId
+            ? { ...item, cantidad }
             : item
         ),
         total: state.total + (item.producto.precio * quantityDiff)
       }
     }
-    
     case 'CLEAR_CART':
       return initialState
-      
     case 'LOAD_CART':
       return action.payload
-      
     default:
       return state
   }
@@ -97,9 +82,9 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
 interface CartContextType {
   state: CartState
-  addItem: (producto: Producto) => void
-  removeItem: (id: string) => void
-  updateQuantity: (id: string, cantidad: number) => void
+  addItem: (producto: Producto, gustoId?: string) => void
+  removeItem: (id: string, gustoId?: string) => void
+  updateQuantity: (id: string, gustoId: string | undefined, cantidad: number) => void
   clearCart: () => void
 }
 
@@ -126,19 +111,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('cart', JSON.stringify(state))
   }, [state])
 
-  const addItem = (producto: Producto) => {
-    dispatch({ type: 'ADD_ITEM', payload: producto })
+  const addItem = (producto: Producto, gustoId?: string) => {
+    dispatch({ type: 'ADD_ITEM', payload: { producto, gustoId } })
   }
 
-  const removeItem = (id: string) => {
-    dispatch({ type: 'REMOVE_ITEM', payload: id })
+  const removeItem = (id: string, gustoId?: string) => {
+    dispatch({ type: 'REMOVE_ITEM', payload: { id, gustoId } })
   }
 
-  const updateQuantity = (id: string, cantidad: number) => {
+  const updateQuantity = (id: string, gustoId: string | undefined, cantidad: number) => {
     if (cantidad <= 0) {
-      removeItem(id)
+      removeItem(id, gustoId)
     } else {
-      dispatch({ type: 'UPDATE_QUANTITY', payload: { id, cantidad } })
+      dispatch({ type: 'UPDATE_QUANTITY', payload: { id, gustoId, cantidad } })
     }
   }
 

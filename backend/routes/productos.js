@@ -7,42 +7,17 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const { categoria, search, limit = 20, page = 1 } = req.query;
-
-    let query = { activo: true };
-
-    // Filtro por categoría
-    if (categoria) {
-      query.categoria = categoria;
-    }
-
-    // Búsqueda por texto
-    if (search) {
-      query.$text = { $search: search };
-    }
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
+    const query = {};
+    if (categoria) query.categoria = categoria;
+    if (search) query.$text = { $search: search };
     const productos = await Producto.find(query)
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
-      .skip(skip);
-
-    const total = await Producto.countDocuments(query);
-
-    res.json({
-      productos,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit)),
-      },
-    });
-  } catch (error) {
-    console.error("Error obteniendo productos:", error);
-    res.status(500).json({
-      message: "Error interno del servidor",
-    });
+      .populate("categoria")
+      .populate("gustos")
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit));
+    res.json(productos);
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener productos" });
   }
 });
 
@@ -69,16 +44,45 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Función para validar imagen base64 PNG/JPG y tamaño
+function isValidBase64Image(base64, maxSizeMB = 2) {
+  // Validar que sea PNG o JPG/JPEG
+  if (
+    !base64.startsWith("data:image/png;base64,") &&
+    !base64.startsWith("data:image/jpeg;base64,") &&
+    !base64.startsWith("data:image/jpg;base64,")
+  ) {
+    return false;
+  }
+
+  // Calcular tamaño en bytes
+  const base64Str = base64.split(",")[1] || "";
+  const sizeInBytes =
+    (base64Str.length * 3) / 4 -
+    (base64Str.endsWith("==") ? 2 : base64Str.endsWith("=") ? 1 : 0);
+  return sizeInBytes <= maxSizeMB * 1024 * 1024;
+}
+
 // POST /productos - Crear producto (protegido)
 router.post("/", verifyToken, async (req, res) => {
   try {
-    const { nombre, descripcion, precio, imagen, categoria, stock } = req.body;
+    const { nombre, descripcion, precio, imagen, categoria, stock, gustos } =
+      req.body;
 
     // Validar campos requeridos
     if (!nombre || !descripcion || !precio || !imagen || !categoria) {
       return res.status(400).json({
         message: "Todos los campos son requeridos",
       });
+    }
+
+    // Validar imagen
+    if (imagen.startsWith("data:image/")) {
+      if (!isValidBase64Image(imagen)) {
+        return res.status(400).json({
+          message: "La imagen debe ser PNG, JPG o JPEG y pesar menos de 2MB",
+        });
+      }
     }
 
     const producto = new Producto({
@@ -88,6 +92,7 @@ router.post("/", verifyToken, async (req, res) => {
       imagen,
       categoria,
       stock: parseInt(stock) || 0,
+      gustos: gustos || [],
     });
 
     await producto.save();
@@ -113,8 +118,16 @@ router.post("/", verifyToken, async (req, res) => {
 // PUT /productos/:id - Actualizar producto (protegido)
 router.put("/:id", verifyToken, async (req, res) => {
   try {
-    const { nombre, descripcion, precio, imagen, categoria, stock, activo } =
-      req.body;
+    const {
+      nombre,
+      descripcion,
+      precio,
+      imagen,
+      categoria,
+      stock,
+      activo,
+      gustos,
+    } = req.body;
 
     const producto = await Producto.findById(req.params.id);
 
@@ -122,6 +135,15 @@ router.put("/:id", verifyToken, async (req, res) => {
       return res.status(404).json({
         message: "Producto no encontrado",
       });
+    }
+
+    // Validar imagen si se actualiza
+    if (imagen && imagen.startsWith("data:image/")) {
+      if (!isValidBase64Image(imagen)) {
+        return res.status(400).json({
+          message: "La imagen debe ser PNG, JPG o JPEG y pesar menos de 2MB",
+        });
+      }
     }
 
     // Actualizar campos
@@ -132,6 +154,7 @@ router.put("/:id", verifyToken, async (req, res) => {
     if (categoria) producto.categoria = categoria;
     if (stock !== undefined) producto.stock = parseInt(stock);
     if (activo !== undefined) producto.activo = activo;
+    if (gustos) producto.gustos = gustos;
 
     await producto.save();
 
