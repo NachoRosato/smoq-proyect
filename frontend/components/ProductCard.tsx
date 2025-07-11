@@ -1,6 +1,5 @@
 import { ShoppingCart, Zap } from 'lucide-react'
 import { formatPrice } from '../lib/helpers'
-import OptimizedImage from './OptimizedImage'
 import ImageSlider from './ImageSlider'
 import { useState } from 'react'
 
@@ -45,13 +44,7 @@ export default function ProductCard({ producto, onAddToCart }: ProductCardProps)
     return stockGusto ? stockGusto.stock : 0;
   };
 
-  // Obtener el stock total (suma de todos los gustos o stock general)
-  const getTotalStock = () => {
-    if (producto.gustos && producto.gustos.length > 0 && producto.stockPorGusto) {
-      return producto.stockPorGusto.reduce((total, sg) => total + sg.stock, 0);
-    }
-    return producto.stock;
-  };
+
 
   const handleAdd = () => {
     if (producto.gustos && producto.gustos.length > 0 && !selectedGusto) {
@@ -95,17 +88,7 @@ export default function ProductCard({ producto, onAddToCart }: ProductCardProps)
     return producto.stock > 0;
   };
 
-  // Obtener el stock a mostrar
-  const getDisplayStock = () => {
-    if (producto.gustos && producto.gustos.length > 0) {
-      if (selectedGusto) {
-        return getStockForGusto(selectedGusto);
-      }
-      // Si no hay gusto seleccionado, mostrar el total de stock disponible
-      return producto.stockPorGusto ? producto.stockPorGusto.reduce((total, sg) => total + sg.stock, 0) : 0;
-    }
-    return producto.stock;
-  };
+
 
   const productImages = getProductImages();
 

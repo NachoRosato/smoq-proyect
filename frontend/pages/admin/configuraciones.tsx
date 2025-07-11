@@ -20,6 +20,11 @@ export default function Configuraciones() {
   const [gustoDesc, setGustoDesc] = useState('')
   const [gustoEdit, setGustoEdit] = useState<any>(null)
   const [gustoLoading, setGustoLoading] = useState(false)
+  
+  // Estados para el modal de confirmación
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<{id: string, name: string, type: 'categoria' | 'gusto'} | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   useEffect(() => {
     configApi.get().then(res => {
@@ -198,27 +203,9 @@ export default function Configuraciones() {
     setCatDesc(cat.descripcion || '')
   }
 
-  const handleCatDelete = async (id: string) => {
-    if (!window.confirm('¿Eliminar esta categoría?')) return
-    
-    if (!auth.token) {
-      toast.error('No tienes permisos para realizar esta acción')
-      return
-    }
-    
-    setCatLoading(true)
-    try {
-      const res = await deleteCategoria(id)
-      if (res && !res.error) {
-        toast.success('Categoría eliminada')
-        const reload = await categoriasApi.getAll();
-        setCategorias(reload.success && Array.isArray(reload.data) ? reload.data : [])
-      } else {
-        toast.error(res.error || res.message || 'Error')
-      }
-    } finally {
-      setCatLoading(false)
-    }
+  const handleCatDelete = async (id: string, name: string) => {
+    setItemToDelete({ id, name, type: 'categoria' })
+    setShowDeleteModal(true)
   }
 
   const handleGustoSave = async (e: any) => {
@@ -258,27 +245,50 @@ export default function Configuraciones() {
     setGustoDesc(g.descripcion || '')
   }
 
-  const handleGustoDelete = async (id: string) => {
-    if (!window.confirm('¿Eliminar este gusto?')) return
-    
-    if (!auth.token) {
-      toast.error('No tienes permisos para realizar esta acción')
+  const handleGustoDelete = async (id: string, name: string) => {
+    setItemToDelete({ id, name, type: 'gusto' })
+    setShowDeleteModal(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!itemToDelete || !auth.token) {
+      setShowDeleteModal(false)
+      setItemToDelete(null)
       return
     }
-    
-    setGustoLoading(true)
+
+    setDeleteLoading(true)
     try {
-      const res = await deleteGusto(id)
-      if (res && !res.error) {
-        toast.success('Gusto eliminado')
-        const reload = await gustosApi.getAll();
-        setGustos(reload.success && Array.isArray(reload.data) ? reload.data : [])
+      let res
+      if (itemToDelete.type === 'categoria') {
+        res = await deleteCategoria(itemToDelete.id)
+        if (res && !res.error) {
+          toast.success('Categoría eliminada')
+          const reload = await categoriasApi.getAll();
+          setCategorias(reload.success && Array.isArray(reload.data) ? reload.data : [])
+        } else {
+          toast.error(res.error || res.message || 'Error')
+        }
       } else {
-        toast.error(res.error || res.message || 'Error')
+        res = await deleteGusto(itemToDelete.id)
+        if (res && !res.error) {
+          toast.success('Gusto eliminado')
+          const reload = await gustosApi.getAll();
+          setGustos(reload.success && Array.isArray(reload.data) ? reload.data : [])
+        } else {
+          toast.error(res.error || res.message || 'Error')
+        }
       }
     } finally {
-      setGustoLoading(false)
+      setDeleteLoading(false)
+      setShowDeleteModal(false)
+      setItemToDelete(null)
     }
+  }
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false)
+    setItemToDelete(null)
   }
 
   return (
@@ -366,7 +376,7 @@ export default function Configuraciones() {
               </div>
               <div className="flex gap-2">
                 <button className="text-blue-600 hover:underline" onClick={() => handleCatEdit(cat)}>Editar</button>
-                <button className="text-red-600 hover:underline" onClick={() => handleCatDelete(cat._id)}>Eliminar</button>
+                <button className="text-red-600 hover:underline" onClick={() => handleCatDelete(cat._id, cat.nombre)}>Eliminar</button>
               </div>
             </li>
           ))}
@@ -416,13 +426,81 @@ export default function Configuraciones() {
               </div>
               <div className="flex gap-2">
                 <button className="text-blue-600 hover:underline" onClick={() => handleGustoEdit(g)}>Editar</button>
-                <button className="text-red-600 hover:underline" onClick={() => handleGustoDelete(g._id)}>Eliminar</button>
+                <button className="text-red-600 hover:underline" onClick={() => handleGustoDelete(g._id, g.nombre)}>Eliminar</button>
               </div>
             </li>
           ))}
           {gustos.length === 0 && <li className="text-gray-500">No hay gustos</li>}
         </ul>
       </div>
+
+      {/* Modal de confirmación de eliminación */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100">
+            {/* Header del modal */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Confirmar eliminación
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Esta acción no se puede deshacer
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="p-6">
+              <p className="text-gray-700 mb-4">
+                ¿Estás seguro de que quieres eliminar 
+                <span className="font-semibold text-gray-900"> &ldquo;{itemToDelete?.name}&rdquo;</span>?
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                {itemToDelete?.type === 'categoria' 
+                  ? 'Esta categoría será eliminada permanentemente. Los productos asociados mantendrán la categoría pero no se podrá editar.'
+                  : 'Este gusto será eliminado permanentemente. Los productos asociados mantendrán el gusto pero no se podrá editar.'
+                }
+              </p>
+
+              {/* Botones de acción */}
+              <div className="flex gap-3">
+                <button
+                  onClick={cancelDelete}
+                  disabled={deleteLoading}
+                  className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleteLoading}
+                  className="flex-1 px-4 py-3 text-white bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {deleteLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Eliminando...
+                    </>
+                  ) : (
+                    'Eliminar'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   )
 } 

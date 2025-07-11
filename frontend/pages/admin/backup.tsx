@@ -38,10 +38,6 @@ const BackupPage: React.FC = () => {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [backupMethod, setBackupMethod] = useState<string>('');
 
-  useEffect(() => {
-    loadBackups();
-  }, []);
-
   const loadBackups = async () => {
     try {
       setLoading(true);
@@ -59,6 +55,11 @@ const BackupPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadBackups();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const createBackup = async () => {
     try {

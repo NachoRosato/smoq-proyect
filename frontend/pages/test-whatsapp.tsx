@@ -20,7 +20,7 @@ export default function TestWhatsApp() {
         // console.log('No hay configuración de WhatsApp');
       }
       setLoading(false)
-    }).catch(error => {
+    }).catch(() => {
       // console.warn('Error obteniendo configuración de WhatsApp:', error)
       setLoading(false)
     })

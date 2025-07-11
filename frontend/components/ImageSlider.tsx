@@ -100,6 +100,7 @@ export default function ImageSlider({
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [images.length])
 
   if (!images || images.length === 0) {

@@ -381,33 +381,7 @@ export default function AdminDashboard() {
     })
   }
 
-  // Manejo de cambio de archivo individual (compatibilidad)
-  const handleSingleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.type !== "image/png" && file.type !== "image/jpeg" && file.type !== "image/jpg") {
-      toast.error("Solo se permite PNG o JPG")
-      return
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("El archivo debe pesar menos de 2MB")
-      return
-    }
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setFormData({ ...formData, imagen: reader.result as string })
-      setImagePreview(reader.result as string)
-      setImageFile(file)
-    }
-    reader.readAsDataURL(file)
-  }
 
-  // Borrar archivo y habilitar input URL
-  const handleRemoveImageFile = () => {
-    setImageFile(null)
-    setImagePreview("")
-    setFormData({ ...formData, imagen: "" })
-  }
 
   // Borrar imagen específica del array
   const handleRemoveImage = (index: number) => {

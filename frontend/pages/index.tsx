@@ -85,7 +85,7 @@ export default function Home() {
       } else {
         toast.error('Error al cargar productos')
       }
-    } catch (error) {
+    } catch {
       toast.error('Error al cargar productos')
     } finally {
       setLoading(false)
