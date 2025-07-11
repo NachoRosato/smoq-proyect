@@ -101,7 +101,10 @@ export default function Configuraciones() {
   const createCategoria = async (nombre: string, descripcion: string) => {
     const res = await fetch(`${API_URL}/api/config/categorias`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${auth.token}`
+      },
       body: JSON.stringify({ nombre, descripcion })
     })
     return res.json()
@@ -109,19 +112,30 @@ export default function Configuraciones() {
   const updateCategoria = async (id: string, nombre: string, descripcion: string) => {
     const res = await fetch(`${API_URL}/api/config/categorias/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${auth.token}`
+      },
       body: JSON.stringify({ nombre, descripcion })
     })
     return res.json()
   }
   const deleteCategoria = async (id: string) => {
-    const res = await fetch(`${API_URL}/api/config/categorias/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${API_URL}/api/config/categorias/${id}`, { 
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${auth.token}`
+      }
+    })
     return res.json()
   }
   const createGusto = async (nombre: string, descripcion: string) => {
     const res = await fetch(`${API_URL}/api/config/gustos`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${auth.token}`
+      },
       body: JSON.stringify({ nombre, descripcion })
     })
     return res.json()
@@ -129,13 +143,21 @@ export default function Configuraciones() {
   const updateGusto = async (id: string, nombre: string, descripcion: string) => {
     const res = await fetch(`${API_URL}/api/config/gustos/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${auth.token}`
+      },
       body: JSON.stringify({ nombre, descripcion })
     })
     return res.json()
   }
   const deleteGusto = async (id: string) => {
-    const res = await fetch(`${API_URL}/api/config/gustos/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${API_URL}/api/config/gustos/${id}`, { 
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${auth.token}`
+      }
+    })
     return res.json()
   }
 

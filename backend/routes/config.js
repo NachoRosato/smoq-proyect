@@ -77,9 +77,11 @@ router.put("/", verifyToken, async (req, res) => {
 router.get("/categorias", async (req, res) => {
   try {
     const categorias = await Categoria.find();
-    res.json(categorias);
+    res.json({ success: true, data: categorias });
   } catch (err) {
-    res.status(500).json({ error: "Error al obtener categorías" });
+    res
+      .status(500)
+      .json({ success: false, error: "Error al obtener categorías" });
   }
 });
 
@@ -128,9 +130,9 @@ router.delete("/categorias/:id", verifyToken, async (req, res) => {
 router.get("/gustos", async (req, res) => {
   try {
     const gustos = await Gusto.find();
-    res.json(gustos);
+    res.json({ success: true, data: gustos });
   } catch (err) {
-    res.status(500).json({ error: "Error al obtener gustos" });
+    res.status(500).json({ success: false, error: "Error al obtener gustos" });
   }
 });
 
