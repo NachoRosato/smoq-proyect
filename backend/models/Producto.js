@@ -23,6 +23,16 @@ const productoSchema = new mongoose.Schema(
       type: String,
       required: [true, "La imagen es requerida"],
     },
+    imagenes: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: function (imagenes) {
+          return imagenes.length <= 10; // Máximo 10 imágenes
+        },
+        message: "No se pueden subir más de 10 imágenes por producto",
+      },
+    },
     categoria: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Categoria",
@@ -44,6 +54,21 @@ const productoSchema = new mongoose.Schema(
         ref: "Gusto",
       },
     ],
+    stockPorGusto: [
+      {
+        gusto: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Gusto",
+          required: true,
+        },
+        stock: {
+          type: Number,
+          required: true,
+          min: [0, "El stock no puede ser negativo"],
+          default: 0,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
@@ -54,5 +79,18 @@ const productoSchema = new mongoose.Schema(
 productoSchema.index({ nombre: "text", descripcion: "text" });
 productoSchema.index({ categoria: 1 });
 productoSchema.index({ activo: 1 });
+
+// Middleware para mantener compatibilidad hacia atrás
+productoSchema.pre("save", function (next) {
+  // Si no hay imágenes en el array pero hay imagen principal, usar esa como primera imagen
+  if (this.imagenes.length === 0 && this.imagen) {
+    this.imagenes = [this.imagen];
+  }
+  // Si hay imágenes en el array pero no imagen principal, usar la primera como imagen principal
+  else if (this.imagenes.length > 0 && !this.imagen) {
+    this.imagen = this.imagenes[0];
+  }
+  next();
+});
 
 module.exports = mongoose.model("Producto", productoSchema);

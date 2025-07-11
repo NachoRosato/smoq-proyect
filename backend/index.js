@@ -9,6 +9,7 @@ const authRoutes = require("./routes/auth");
 const productosRoutes = require("./routes/productos");
 const pedidosRoutes = require("./routes/pedidos");
 const configRoutes = require("./routes/config");
+const backupRoutes = require("./routes/backup");
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -43,6 +44,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/productos", productosRoutes);
 app.use("/api/pedidos", pedidosRoutes);
 app.use("/api/config", configRoutes);
+app.use("/api/backup", backupRoutes);
 
 // Ruta de prueba
 app.get("/", (req, res) => {

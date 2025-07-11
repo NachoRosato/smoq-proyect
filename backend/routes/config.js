@@ -28,7 +28,6 @@ router.get("/", async (req, res) => {
 // Actualizar configuración (solo admin)
 router.put("/", verifyToken, async (req, res) => {
   try {
-    console.log("Body recibido:", req.body);
     const {
       minFreeShipping,
       whatsappNumber,
@@ -36,19 +35,10 @@ router.put("/", verifyToken, async (req, res) => {
       whatsappDescription,
       whatsappGoodbye,
     } = req.body;
-    console.log("Datos extraídos:", {
-      minFreeShipping,
-      whatsappNumber,
-      whatsappTitle,
-      whatsappDescription,
-      whatsappGoodbye,
-    });
 
     let config = await Config.findOne();
-    console.log("Config encontrada:", config);
 
     if (!config) {
-      console.log("Creando nueva configuración");
       config = await Config.create({
         minFreeShipping: minFreeShipping || 25000,
         whatsappNumber: whatsappNumber || "",
@@ -59,7 +49,6 @@ router.put("/", verifyToken, async (req, res) => {
         whatsappGoodbye: whatsappGoodbye || "Enviado desde la tienda online",
       });
     } else {
-      console.log("Actualizando configuración existente");
       if (minFreeShipping !== undefined) {
         config.minFreeShipping = minFreeShipping;
       }
@@ -78,10 +67,8 @@ router.put("/", verifyToken, async (req, res) => {
       await config.save();
     }
 
-    console.log("Configuración guardada exitosamente:", config);
     res.json({ success: true, config });
   } catch (error) {
-    console.error("Error detallado actualizando configuración:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -97,7 +84,7 @@ router.get("/categorias", async (req, res) => {
 });
 
 // Crear una nueva categoría
-router.post("/categorias", async (req, res) => {
+router.post("/categorias", verifyToken, async (req, res) => {
   try {
     const { nombre, descripcion } = req.body;
     const nuevaCategoria = new Categoria({ nombre, descripcion });
@@ -109,7 +96,7 @@ router.post("/categorias", async (req, res) => {
 });
 
 // Editar una categoría existente
-router.put("/categorias/:id", async (req, res) => {
+router.put("/categorias/:id", verifyToken, async (req, res) => {
   try {
     const { nombre, descripcion } = req.body;
     const categoria = await Categoria.findByIdAndUpdate(
@@ -126,7 +113,7 @@ router.put("/categorias/:id", async (req, res) => {
 });
 
 // Eliminar una categoría
-router.delete("/categorias/:id", async (req, res) => {
+router.delete("/categorias/:id", verifyToken, async (req, res) => {
   try {
     const categoria = await Categoria.findByIdAndDelete(req.params.id);
     if (!categoria)
@@ -148,7 +135,7 @@ router.get("/gustos", async (req, res) => {
 });
 
 // Crear un nuevo gusto
-router.post("/gustos", async (req, res) => {
+router.post("/gustos", verifyToken, async (req, res) => {
   try {
     const { nombre, descripcion } = req.body;
     const nuevoGusto = new Gusto({ nombre, descripcion });
@@ -160,7 +147,7 @@ router.post("/gustos", async (req, res) => {
 });
 
 // Editar un gusto existente
-router.put("/gustos/:id", async (req, res) => {
+router.put("/gustos/:id", verifyToken, async (req, res) => {
   try {
     const { nombre, descripcion } = req.body;
     const gusto = await Gusto.findByIdAndUpdate(
@@ -176,7 +163,7 @@ router.put("/gustos/:id", async (req, res) => {
 });
 
 // Eliminar un gusto
-router.delete("/gustos/:id", async (req, res) => {
+router.delete("/gustos/:id", verifyToken, async (req, res) => {
   try {
     const gusto = await Gusto.findByIdAndDelete(req.params.id);
     if (!gusto) return res.status(404).json({ error: "Gusto no encontrado" });

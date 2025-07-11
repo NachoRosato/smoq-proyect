@@ -16,36 +16,45 @@ interface Producto {
   precio: number
   descripcion: string
   imagen: string
+  imagenes?: string[]
   categoria: { _id: string; nombre: string }
   stock: number
   activo: boolean
   gustos?: { _id: string; nombre: string; descripcion?: string }[]
+  stockPorGusto?: { gusto: { _id: string; nombre: string; descripcion?: string }; stock: number }[]
 }
 
 export default function AdminDashboard() {
   const { auth } = useAuth()
   const { sidebarOpen } = useSidebar()
-  console.log('sidebarOpen en AdminDashboard:', sidebarOpen)
   const [productos, setProductos] = useState<Producto[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Producto | null>(null)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [productToDelete, setProductToDelete] = useState<Producto | null>(null)
+  const [showInactiveProducts, setShowInactiveProducts] = useState(false)
+  const [showPermanentDeleteModal, setShowPermanentDeleteModal] = useState(false)
+  const [productToPermanentDelete, setProductToPermanentDelete] = useState<Producto | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
     precio: '',
     imagen: '',
+    imagenes: [] as string[],
     categoria: '',
     stock: '',
-    gustos: [] as string[]
+    gustos: [] as string[],
+    stockPorGusto: [] as { gusto: string; stock: number }[]
   })
   const [categorias, setCategorias] = useState<any[]>([])
   const [gustos, setGustos] = useState<any[]>([])
   const [errors, setErrors] = useState<any>({})
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>("")
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [imagePreviews, setImagePreviews] = useState<string[]>([])
 
   useEffect(() => {
     loadProductos()
@@ -73,7 +82,7 @@ export default function AdminDashboard() {
     if (formData.descripcion.length > 500) newErrors.descripcion = 'Máximo 500 caracteres'
     if (formData.precio && parseFloat(formData.precio) < 0) newErrors.precio = 'No puede ser negativo'
     if (formData.stock && parseInt(formData.stock) < 0) newErrors.stock = 'No puede ser negativo'
-    setErrors(newErrors)
+    setErrors((prev: any) => ({ ...prev, ...newErrors }))
   }, [formData])
 
   const loadProductos = async () => {
@@ -94,6 +103,21 @@ export default function AdminDashboard() {
     }
   }
 
+  // Filtrar productos según el estado activo/inactivo y búsqueda
+  const filteredProductos = productos.filter(producto => {
+    // Filtro por estado activo/inactivo
+    const matchesStatus = showInactiveProducts ? true : producto.activo;
+    
+    // Filtro por término de búsqueda
+    const matchesSearch = searchTerm === '' || 
+      producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      producto.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (producto.categoria && producto.categoria.nombre && 
+       producto.categoria.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    return matchesStatus && matchesSearch;
+  })
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const newErrors: any = {}
@@ -103,10 +127,19 @@ export default function AdminDashboard() {
     if (formData.descripcion.length > 500) newErrors.descripcion = 'Máximo 500 caracteres'
     if (!formData.precio) newErrors.precio = 'El precio es obligatorio'
     else if (parseFloat(formData.precio) < 0) newErrors.precio = 'No puede ser negativo'
-    if (!formData.imagen.trim()) newErrors.imagen = 'La URL de imagen es obligatoria'
+    if (!formData.imagen.trim() && formData.imagenes.length === 0) newErrors.imagen = 'Al menos una imagen es obligatoria'
     if (!formData.categoria) newErrors.categoria = 'La categoría es obligatoria'
     if (!formData.stock) newErrors.stock = 'El stock es obligatorio'
     else if (parseInt(formData.stock) < 0) newErrors.stock = 'No puede ser negativo'
+    
+    // Validar stock por gusto
+    if (formData.gustos.length > 0) {
+      const stockErrors = validateStockPorGusto()
+      if (!stockErrors) {
+        newErrors.stockPorGusto = 'Hay errores en el stock por gusto'
+      }
+    }
+    
     setErrors(newErrors)
     if (Object.keys(newErrors).length > 0) return
     
@@ -120,7 +153,9 @@ export default function AdminDashboard() {
         ...formData,
         precio: parseFloat(formData.precio),
         stock: parseInt(formData.stock),
-        gustos: formData.gustos
+        gustos: formData.gustos,
+        stockPorGusto: formData.stockPorGusto,
+        imagenes: formData.imagenes.length > 0 ? formData.imagenes : [formData.imagen]
       }
 
       if (editingProduct) {
@@ -156,12 +191,16 @@ export default function AdminDashboard() {
       descripcion: producto.descripcion,
       precio: producto.precio.toString(),
       imagen: producto.imagen,
-      categoria: producto.categoria._id,
+      imagenes: producto.imagenes || [producto.imagen],
+      categoria: producto.categoria && producto.categoria._id ? producto.categoria._id : (categorias.length > 0 ? categorias[0]._id : ''),
       stock: producto.stock.toString(),
-      gustos: producto.gustos?.map(g => g._id) || []
+      gustos: producto.gustos?.map(g => g._id) || [],
+      stockPorGusto: producto.stockPorGusto?.map(sg => ({ gusto: sg.gusto._id, stock: sg.stock })) || []
     })
     setImagePreview(producto.imagen)
     setImageFile(null)
+    setImageFiles([])
+    setImagePreviews(producto.imagenes || [producto.imagen])
     setShowModal(true)
   }
 
@@ -171,12 +210,17 @@ export default function AdminDashboard() {
       descripcion: '',
       precio: '',
       imagen: '',
+      imagenes: [],
       categoria: categorias.length > 0 ? categorias[0]._id : '',
       stock: '',
-      gustos: []
+      gustos: [],
+      stockPorGusto: []
     })
     setImagePreview("")
     setImageFile(null)
+    setImageFiles([])
+    setImagePreviews([])
+    setErrors({})
   }
 
   const openNewProductModal = () => {
@@ -186,12 +230,17 @@ export default function AdminDashboard() {
       descripcion: '',
       precio: '',
       imagen: '',
+      imagenes: [],
       categoria: categorias.length > 0 ? categorias[0]._id : '',
       stock: '',
-      gustos: []
+      gustos: [],
+      stockPorGusto: []
     })
     setImagePreview("")
     setImageFile(null)
+    setImageFiles([])
+    setImagePreviews([])
+    setErrors({})
     setShowModal(true)
   }
 
@@ -200,10 +249,13 @@ export default function AdminDashboard() {
     setShowConfirmModal(true)
   }
 
+  const openPermanentDeleteModal = (producto: Producto) => {
+    setProductToPermanentDelete(producto)
+    setShowPermanentDeleteModal(true)
+  }
+
   const confirmDelete = async () => {
-    if (!productToDelete || !auth.token) {
-      return
-    }
+    if (!productToDelete || !auth.token) return
 
     try {
       const response = await productosApi.delete(productToDelete._id, auth.token)
@@ -211,11 +263,68 @@ export default function AdminDashboard() {
         toast.success('Producto eliminado correctamente')
         loadProductos()
       } else {
-        toast.error('Error al eliminar producto')
+        toast.error(`Error al eliminar producto: ${response.error}`)
       }
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Error eliminando producto:', error)
       toast.error('Error al eliminar producto')
+    } finally {
+      setShowConfirmModal(false)
+      setProductToDelete(null)
+    }
+  }
+
+  const handleReactivate = async (producto: Producto) => {
+    if (!auth.token) return
+
+    try {
+      const response = await productosApi.update(producto._id, { activo: true }, auth.token)
+      if (response.success) {
+        toast.success('Producto reactivado correctamente')
+        loadProductos()
+      } else {
+        toast.error(`Error al reactivar producto: ${response.error}`)
+      }
+    } catch (error) {
+      console.error('Error reactivando producto:', error)
+      toast.error('Error al reactivar producto')
+    }
+  }
+
+  const handlePermanentDelete = async (producto: Producto) => {
+    if (!auth.token) return
+
+    try {
+      const response = await productosApi.permanentDelete(producto._id, auth.token)
+      if (response.success) {
+        toast.success('Producto eliminado definitivamente')
+        loadProductos()
+      } else {
+        toast.error(`Error al eliminar producto: ${response.error}`)
+      }
+    } catch (error) {
+      console.error('Error eliminando producto:', error)
+      toast.error('Error al eliminar producto')
+    }
+  }
+
+  const confirmPermanentDelete = async () => {
+    if (!productToPermanentDelete || !auth.token) return
+
+    try {
+      const response = await productosApi.permanentDelete(productToPermanentDelete._id, auth.token)
+      if (response.success) {
+        toast.success('Producto eliminado definitivamente de la base de datos')
+        loadProductos()
+      } else {
+        toast.error(`Error al eliminar producto: ${response.error}`)
+      }
+    } catch (error) {
+      console.error('Error eliminando producto definitivamente:', error)
+      toast.error('Error al eliminar producto')
+    } finally {
+      setShowPermanentDeleteModal(false)
+      setProductToPermanentDelete(null)
     }
   }
 
@@ -230,6 +339,50 @@ export default function AdminDashboard() {
 
   // Manejo de cambio de archivo
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+    
+    // Validar cada archivo
+    for (const file of files) {
+      if (file.type !== "image/png" && file.type !== "image/jpeg" && file.type !== "image/jpg") {
+        toast.error("Solo se permite PNG o JPG")
+        return
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Cada archivo debe pesar menos de 2MB")
+        return
+      }
+    }
+    
+    if (files.length > 10) {
+      toast.error("Máximo 10 imágenes por producto")
+      return
+    }
+
+    const newImageFiles = [...imageFiles, ...files]
+    setImageFiles(newImageFiles)
+    
+    // Convertir archivos a base64
+    const newPreviews: string[] = []
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        newPreviews.push(reader.result as string)
+        if (newPreviews.length === files.length) {
+          setImagePreviews([...imagePreviews, ...newPreviews])
+          setFormData({ 
+            ...formData, 
+            imagenes: [...formData.imagenes, ...newPreviews],
+            imagen: formData.imagen || newPreviews[0] // Primera imagen como principal
+          })
+        }
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  // Manejo de cambio de archivo individual (compatibilidad)
+  const handleSingleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.type !== "image/png" && file.type !== "image/jpeg" && file.type !== "image/jpg") {
@@ -254,6 +407,84 @@ export default function AdminDashboard() {
     setImageFile(null)
     setImagePreview("")
     setFormData({ ...formData, imagen: "" })
+  }
+
+  // Borrar imagen específica del array
+  const handleRemoveImage = (index: number) => {
+    const newImagenes = formData.imagenes.filter((_, i) => i !== index)
+    const newImageFiles = imageFiles.filter((_, i) => i !== index)
+    const newImagePreviews = imagePreviews.filter((_, i) => i !== index)
+    
+    setFormData({ 
+      ...formData, 
+      imagenes: newImagenes,
+      imagen: newImagenes.length > 0 ? newImagenes[0] : "" // Primera imagen como principal
+    })
+    setImageFiles(newImageFiles)
+    setImagePreviews(newImagePreviews)
+  }
+
+  // Función para manejar cambios en gustos y actualizar stock por gusto
+  const handleGustosChange = (gustosSeleccionados: string[]) => {
+    setFormData({ ...formData, gustos: gustosSeleccionados })
+    
+    // Actualizar stock por gusto
+    const nuevoStockPorGusto = gustosSeleccionados.map(gustoId => {
+      const stockExistente = formData.stockPorGusto.find(sg => sg.gusto === gustoId)
+      return {
+        gusto: gustoId,
+        stock: stockExistente ? stockExistente.stock : 0
+      }
+    })
+    
+    setFormData(prev => ({ ...prev, stockPorGusto: nuevoStockPorGusto }))
+  }
+
+  // Función para actualizar stock de un gusto específico
+  const handleStockGustoChange = (gustoId: string, value: string) => {
+    // Validar que solo sean números enteros positivos
+    const numericValue = value.replace(/[^0-9]/g, '')
+    const stock = numericValue === '' ? 0 : parseInt(numericValue)
+    
+    setFormData(prev => ({
+      ...prev,
+      stockPorGusto: prev.stockPorGusto.map(sg => 
+        sg.gusto === gustoId ? { ...sg, stock } : sg
+      )
+    }))
+
+    // Limpiar error específico de este gusto
+    setErrors((prev: any) => {
+      const newErrors = { ...prev }
+      delete newErrors[`stockGusto_${gustoId}`]
+      return newErrors
+    })
+  }
+
+  // Función para validar stock por gusto
+  const validateStockPorGusto = () => {
+    if (formData.gustos.length === 0) return true
+    
+    const newErrors: any = {}
+    let hasError = false
+    
+    formData.stockPorGusto.forEach((sg) => {
+      if (sg.stock < 0) {
+        newErrors[`stockGusto_${sg.gusto}`] = 'No puede ser negativo'
+        hasError = true
+      }
+      if (sg.stock > 999999) {
+        newErrors[`stockGusto_${sg.gusto}`] = 'No puede ser mayor a 999,999'
+        hasError = true
+      }
+      if (sg.stock === 0) {
+        newErrors[`stockGusto_${sg.gusto}`] = 'El stock es obligatorio'
+        hasError = true
+      }
+    })
+    
+    setErrors((prev: any) => ({ ...prev, ...newErrors }))
+    return !hasError
   }
 
   return (
@@ -315,7 +546,7 @@ export default function AdminDashboard() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Categorías</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {new Set(productos.map(p => p.categoria.nombre)).size}
+                  {new Set(productos.map(p => p.categoria && p.categoria.nombre ? p.categoria.nombre : 'Sin categoría')).size}
                 </p>
               </div>
             </div>
@@ -326,16 +557,89 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-xl shadow-lg border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">
-                📦 Productos
-              </h2>
+              <div className="flex items-center gap-4">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  📦 Productos
+                </h2>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-3 text-sm text-gray-600 cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={showInactiveProducts}
+                        onChange={(e) => setShowInactiveProducts(e.target.checked)}
+                        className="sr-only"
+                      />
+                      <div className={`w-5 h-5 border-2 rounded-md transition-all duration-300 flex items-center justify-center transform ${
+                        showInactiveProducts
+                          ? 'bg-amber-500 border-amber-500 shadow-lg shadow-amber-200 scale-110'
+                          : 'bg-white border-gray-300 group-hover:border-amber-400 group-hover:bg-amber-50 group-hover:scale-105'
+                      }`}>
+                        {showInactiveProducts && (
+                          <svg className="w-3 h-3 text-white transition-all duration-200 ease-in-out" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                    <span className="font-medium group-hover:text-amber-700 transition-colors duration-200">
+                      Mostrar inactivos
+                    </span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-gray-700 bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
+                      {filteredProductos.length} productos
+                    </span>
+                    <div className="flex items-center gap-3 text-xs">
+                      <div className="flex items-center gap-1.5 bg-green-50 px-2 py-1 rounded-full border border-green-200">
+                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                        <span className="text-green-700 font-medium">{productos.filter(p => p.activo).length} activos</span>
+                      </div>
+                      {productos.filter(p => !p.activo).length > 0 && (
+                        <div className="flex items-center gap-1.5 bg-red-50 px-2 py-1 rounded-full border border-red-200">
+                          <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                          <span className="text-red-700 font-medium">{productos.filter(p => !p.activo).length} inactivos</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
               <button
                 onClick={openNewProductModal}
                 className="bg-gray-900 hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-5 h-5" />
                 <span>Nuevo Producto</span>
               </button>
+            </div>
+            
+            {/* Barra de búsqueda */}
+            <div className="mt-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar productos por nombre, descripción o categoría..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-500 bg-white"
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -361,6 +665,27 @@ export default function AdminDashboard() {
                   Agregar Producto
                 </button>
               </div>
+            ) : filteredProductos.length === 0 ? (
+              <div className="p-8 text-center">
+                <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No hay productos {showInactiveProducts ? 'inactivos' : 'activos'}
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  {showInactiveProducts 
+                    ? 'Todos los productos están activos' 
+                    : 'No hay productos activos para mostrar'
+                  }
+                </p>
+                {!showInactiveProducts && (
+                  <button
+                    onClick={() => setShowInactiveProducts(true)}
+                    className="bg-amber-600 hover:bg-amber-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+                  >
+                    Ver productos inactivos
+                  </button>
+                )}
+              </div>
             ) : (
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -373,6 +698,9 @@ export default function AdminDashboard() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Gustos
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Stock por Gusto
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Precio
@@ -389,8 +717,10 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {productos.map((producto) => (
-                    <tr key={producto._id} className="hover:bg-gray-50 transition-colors duration-200">
+                  {filteredProductos.map((producto) => (
+                    <tr key={producto._id} className={`hover:bg-gray-50 transition-colors duration-200 ${
+                      !producto.activo ? 'bg-gray-50 opacity-75' : ''
+                    }`}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
@@ -403,8 +733,15 @@ export default function AdminDashboard() {
                             />
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {producto.nombre}
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm font-medium text-gray-900">
+                                {producto.nombre}
+                              </div>
+                              {!producto.activo && (
+                                <span className="inline-flex px-1.5 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                                  Inactivo
+                                </span>
+                              )}
                             </div>
                             <div className="text-sm text-gray-500 truncate max-w-xs">
                               {producto.descripcion}
@@ -427,6 +764,32 @@ export default function AdminDashboard() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {producto.stockPorGusto && producto.stockPorGusto.length > 0 ? (
+                          <div className="space-y-1">
+                            {producto.stockPorGusto.map(sg => {
+                              const gusto = gustos.find(g => g._id === sg.gusto._id || g._id === sg.gusto);
+                              const gustoId = typeof sg.gusto === 'string' ? sg.gusto : sg.gusto._id;
+                              return (
+                                <div key={gustoId} className="flex items-center justify-between">
+                                  <span className="text-xs font-medium text-gray-700">
+                                    {gusto?.nombre || 'Desconocido'}
+                                  </span>
+                                  <span className={`text-xs px-2 py-1 rounded-full ${
+                                    sg.stock > 0 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    {sg.stock} unid.
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-xs">Sin stock por gusto</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatPrice(producto.precio)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -440,6 +803,11 @@ export default function AdminDashboard() {
                         }`}>
                           {producto.activo ? 'Activo' : 'Inactivo'}
                         </span>
+                        {!producto.activo && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Eliminado
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
@@ -449,12 +817,35 @@ export default function AdminDashboard() {
                           >
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => openDeleteModal(producto)}
-                            className="text-red-600 hover:text-red-800 hover:bg-red-100 p-1 rounded transition-colors duration-200"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {producto.activo ? (
+                            <button
+                              onClick={() => openDeleteModal(producto)}
+                              className="text-red-600 hover:text-red-800 hover:bg-red-100 p-1 rounded transition-colors duration-200"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleReactivate(producto)}
+                                className="text-green-600 hover:text-green-800 hover:bg-green-100 p-1 rounded transition-colors duration-200"
+                                title="Reactivar producto"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => openPermanentDeleteModal(producto)}
+                                className="text-red-600 hover:text-red-800 hover:bg-red-100 p-1 rounded transition-colors duration-200"
+                                title="Eliminar definitivamente"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -534,47 +925,85 @@ export default function AdminDashboard() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Imagen del producto (PNG/JPG, máx 2MB) o URL *
+                    Imágenes del producto (PNG/JPG, máx 2MB cada una, máximo 10 imágenes) *
                   </label>
-                  <div className="flex flex-col md:flex-row md:items-center gap-3">
+                  
+                  {/* Input para múltiples archivos */}
+                  <div className="mb-3">
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/jpg"
+                      multiple
                       onChange={handleImageFileChange}
-                      className="block w-full md:w-auto text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
+                      className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
                     />
-                    {imageFile && (
-                      <button
-                        type="button"
-                        onClick={handleRemoveImageFile}
-                        className="text-xs text-red-600 hover:underline"
-                      >
-                        Quitar archivo
-                      </button>
-                    )}
+                    <p className="text-xs text-gray-500 mt-1">Selecciona múltiples archivos o arrastra varios archivos aquí.</p>
                   </div>
-                  <input
-                    type="url"
-                    placeholder="https://..."
-                    value={!imageFile ? formData.imagen : ""}
-                    onChange={e => setFormData({ ...formData, imagen: e.target.value })}
-                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-500 bg-white border-gray-300 mt-2"
-                    disabled={!!imageFile}
-                    required={!imageFile}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Sube un PNG/JPG o pega una URL. Si subes archivo, se usará ese.</p>
-                  {formData.imagen && (
-                    <div className="mt-2">
-                      <span className="block text-xs text-gray-500 mb-1">Preview:</span>
-                      <OptimizedImage
-                        src={imageFile ? imagePreview : formData.imagen}
-                        alt="Preview"
-                        width={128}
-                        height={128}
-                        className="w-32 h-32 object-contain border rounded-lg bg-gray-50 shadow"
-                      />
+
+                  {/* Input para URL individual (compatibilidad) */}
+                  <div className="mb-3">
+                    <input
+                      type="url"
+                      placeholder="https://... (URL de imagen individual)"
+                      value={formData.imagen}
+                      onChange={e => setFormData({ ...formData, imagen: e.target.value })}
+                      className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-500 bg-white border-gray-300"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">O pega una URL de imagen individual.</p>
+                  </div>
+
+                  {/* Preview de imágenes */}
+                  {(formData.imagenes.length > 0 || formData.imagen) && (
+                    <div className="mt-4">
+                      <span className="block text-sm font-medium text-gray-700 mb-2">Imágenes del producto:</span>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {/* Mostrar imágenes del array */}
+                        {formData.imagenes.map((img, index) => (
+                          <div key={`array-${index}`} className="relative group">
+                            <OptimizedImage
+                              src={img}
+                              alt={`Imagen ${index + 1}`}
+                              width={128}
+                              height={128}
+                              className="w-full h-24 object-cover border rounded-lg bg-gray-50 shadow"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(index)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                            >
+                              ×
+                            </button>
+                            <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1 rounded">
+                              {index + 1}
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {/* Mostrar imagen individual si no está en el array */}
+                        {formData.imagen && !formData.imagenes.includes(formData.imagen) && (
+                          <div className="relative group">
+                            <OptimizedImage
+                              src={formData.imagen}
+                              alt="Imagen individual"
+                              width={128}
+                              height={128}
+                              className="w-full h-24 object-cover border rounded-lg bg-gray-50 shadow"
+                            />
+                            <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1 rounded">
+                              URL
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="mt-2 text-xs text-gray-500">
+                        💡 La primera imagen será la imagen principal del producto. Puedes subir hasta 10 imágenes.
+                      </div>
                     </div>
                   )}
+
+                  {errors.imagen && <div className="mt-1 text-sm text-red-600">⚠️ {errors.imagen}</div>}
                 </div>
 
                 <div>
@@ -587,6 +1016,9 @@ export default function AdminDashboard() {
                     onChange={(e) => setFormData({...formData, categoria: e.target.value})}
                     className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-500 bg-white border-gray-300"
                   >
+                    {categorias.length === 0 && (
+                      <option value="">Sin categoría disponible</option>
+                    )}
                     {categorias.map(cat => (
                       <option key={cat._id} value={cat._id}>
                         {cat.nombre}
@@ -604,7 +1036,7 @@ export default function AdminDashboard() {
                     value={formData.gustos || []}
                     onChange={e => {
                       const options = Array.from(e.target.selectedOptions).map(opt => opt.value);
-                      setFormData({ ...formData, gustos: options });
+                      handleGustosChange(options);
                     }}
                     className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-500 bg-white border-gray-300"
                   >
@@ -623,11 +1055,67 @@ export default function AdminDashboard() {
                     type="number"
                     required
                     value={formData.stock}
-                    onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, stock: e.target.value})
+                      // Limpiar error cuando el usuario empiece a escribir
+                      if (errors.stock) {
+                        setErrors((prev: any) => ({ ...prev, stock: undefined }))
+                      }
+                    }}
                     className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 bg-white ${errors.stock ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:border-amber-500 focus:ring-amber-500'}`}
                     min={0}
                   />
                   {errors.stock && <div className="mt-1 text-sm text-red-600">⚠️ {errors.stock}</div>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Stock por Gusto {formData.gustos.length > 0 && <span className="text-red-500">*</span>}
+                  </label>
+                  {formData.gustos.length > 0 ? (
+                    <div className="space-y-4">
+                      {formData.gustos.map(gustoId => {
+                        const gusto = gustos.find(g => g._id === gustoId);
+                        const stockPorGusto = formData.stockPorGusto.find(sg => sg.gusto === gustoId);
+                        const stockValue = stockPorGusto?.stock || 0;
+                        const errorKey = `stockGusto_${gustoId}`;
+                        const hasError = errors[errorKey];
+                        
+                        return (
+                          <div key={gustoId} className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                              Stock para {gusto?.nombre || 'Desconocido'} *
+                            </label>
+                            <input
+                              type="number"
+                              required
+                              value={stockValue === 0 ? '' : stockValue.toString()}
+                              onChange={(e) => {
+                                handleStockGustoChange(gustoId, e.target.value)
+                                // Limpiar error cuando el usuario empiece a escribir
+                                if (hasError) {
+                                  setErrors((prev: any) => ({ ...prev, [errorKey]: undefined }))
+                                }
+                              }}
+                              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 bg-white ${hasError ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:border-amber-500 focus:ring-amber-500'}`}
+                              min={0}
+                              placeholder="0"
+                            />
+                            {hasError && <div className="mt-1 text-sm text-red-600">⚠️ {hasError}</div>}
+                          </div>
+                        );
+                      })}
+                      <div className="text-xs text-gray-500 mt-2">
+                        💡 Define el stock disponible para cada gusto. Solo números enteros positivos.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-sm text-amber-700">
+                        📝 Selecciona gustos arriba para definir el stock individual de cada uno
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-between space-x-3 pt-6">
@@ -660,6 +1148,22 @@ export default function AdminDashboard() {
           title="Confirmar Eliminación"
           message={`¿Estás seguro de que quieres eliminar el producto "${productToDelete?.nombre}"? Esta acción no se puede deshacer.`}
           confirmText="Eliminar"
+          cancelText="Cancelar"
+          type="danger"
+        />
+      )}
+
+      {/* Permanent Delete Confirmation Modal */}
+      {showPermanentDeleteModal && (
+        <ConfirmModal
+          isOpen={showPermanentDeleteModal}
+          onClose={() => setShowPermanentDeleteModal(false)}
+          onConfirm={confirmPermanentDelete}
+          title="Eliminación Definitiva"
+          message={`¿Estás completamente seguro de que quieres eliminar definitivamente el producto "${productToPermanentDelete?.nombre}"? 
+
+⚠️ Esta acción eliminará el producto de la base de datos de forma permanente y no se puede deshacer.`}
+          confirmText="Eliminar Definitivamente"
           cancelText="Cancelar"
           type="danger"
         />

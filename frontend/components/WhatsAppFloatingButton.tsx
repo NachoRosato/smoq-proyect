@@ -3,7 +3,6 @@ export default function WhatsAppFloatingButton() {
     // Por ahora, usar un número por defecto o mostrar mensaje
     const mensaje = encodeURIComponent('Hola! Quiero hacer una consulta!');
     const url = `https://wa.me/5491112345678?text=${mensaje}`;
-    console.log('Enlace WhatsApp:', url);
     window.open(url, '_blank');
   };
 

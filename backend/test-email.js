@@ -2,8 +2,6 @@ const transporter = require("./config/email");
 
 async function testEmail() {
   try {
-    console.log("📧 Probando envío de email...");
-
     const mailOptions = {
       from: process.env.SMTP_USER,
       to: process.env.ADMIN_EMAIL || "tu-email@gmail.com",
@@ -29,9 +27,6 @@ async function testEmail() {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log("✅ Email enviado exitosamente!");
-    console.log("📧 Message ID:", info.messageId);
-    console.log("📤 Enviado a:", mailOptions.to);
   } catch (error) {
     console.error("❌ Error enviando email:", error);
     console.log("\n🔧 Posibles soluciones:");

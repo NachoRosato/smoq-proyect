@@ -11,7 +11,6 @@ export default function FloatingWhatsAppButton() {
     setTimeout(() => setVisible(true), 300)
     // Obtener número de WhatsApp del backend
     configApi.get().then(res => {
-      console.log('res', res);
       if (res.success && res.config?.whatsappNumber) {
         setNumeroWhatsapp(res.config.whatsappNumber)
       }
@@ -19,7 +18,6 @@ export default function FloatingWhatsAppButton() {
   }, [])
 
   const handleClick = () => {
-    console.log('numeroWhatsapp', numeroWhatsapp);
     if (!numeroWhatsapp) return
     const numeroLimpio = numeroWhatsapp.replace(/[^0-9]/g, '')
     const mensaje = encodeURIComponent('Hola! Quiero hacer una consulta!')

@@ -29,15 +29,11 @@ export default function CartStep3({ onBack, formData }: CartStep3Props) {
   useEffect(() => {
     // Obtener configuración de WhatsApp
     configApi.getWhatsApp().then(res => {
-      console.log('Respuesta de configuración WhatsApp:', res);
       if (res.success && res.config) {
-        console.log('Configuración de WhatsApp:', res.config);
         setWhatsappNumber(res.config.whatsappNumber || '')
         setWhatsappTitle(res.config.whatsappTitle || '')
         setWhatsappDescription(res.config.whatsappDescription || '')
         setWhatsappGoodbye(res.config.whatsappGoodbye || '')
-      } else {
-        console.log('No hay configuración de WhatsApp');
       }
     }).catch(error => {
       console.warn('Error obteniendo configuración de WhatsApp:', error)
@@ -86,7 +82,6 @@ export default function CartStep3({ onBack, formData }: CartStep3Props) {
   }
 
   const handleEnviarWhatsApp = () => {
-    console.log('Intentando enviar WhatsApp, número configurado:', whatsappNumber);
     
     if (!whatsappNumber) {
       toast.error('No hay número de WhatsApp configurado')
@@ -117,15 +112,11 @@ Total: ${formatPrice(state.total)}
 ---
 ${whatsappGoodbye || 'Enviado desde la tienda online'}`
 
-    console.log('Mensaje generado:', mensaje);
-
     // Codificar el mensaje para WhatsApp
     const mensajeCodificado = encodeURIComponent(mensaje)
     const numeroLimpio = whatsappNumber.replace(/\D/g, '')
     const urlWhatsApp = `https://wa.me/${numeroLimpio}?text=${mensajeCodificado}`
     
-    console.log('URL de WhatsApp generada:', urlWhatsApp);
-
     // Abrir WhatsApp en nueva ventana
     window.open(urlWhatsApp, '_blank')
   }

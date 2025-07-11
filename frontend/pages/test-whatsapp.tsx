@@ -11,19 +11,17 @@ export default function TestWhatsApp() {
 
   useEffect(() => {
     configApi.getWhatsApp().then(res => {
-      console.log('Respuesta de configuración WhatsApp:', res);
       if (res.success && res.config) {
-        console.log('Configuración de WhatsApp:', res.config);
         setWhatsappNumber(res.config.whatsappNumber || '')
         setWhatsappTitle(res.config.whatsappTitle || '')
         setWhatsappDescription(res.config.whatsappDescription || '')
         setWhatsappGoodbye(res.config.whatsappGoodbye || '')
       } else {
-        console.log('No hay configuración de WhatsApp');
+        // console.log('No hay configuración de WhatsApp');
       }
       setLoading(false)
     }).catch(error => {
-      console.warn('Error obteniendo configuración de WhatsApp:', error)
+      // console.warn('Error obteniendo configuración de WhatsApp:', error)
       setLoading(false)
     })
   }, [])
@@ -48,7 +46,6 @@ ${whatsappGoodbye || 'Enviado desde la página de prueba'}`
     const numeroLimpio = whatsappNumber.replace(/\D/g, '')
     const urlWhatsApp = `https://wa.me/${numeroLimpio}?text=${mensajeCodificado}`
     
-    console.log('URL de WhatsApp generada:', urlWhatsApp);
     window.open(urlWhatsApp, '_blank')
   }
 

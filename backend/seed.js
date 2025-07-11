@@ -240,7 +240,6 @@ async function seed() {
     },
   ]);
 
-  console.log("Base de datos poblada con categorías, gustos y productos!");
   mongoose.disconnect();
 }
 

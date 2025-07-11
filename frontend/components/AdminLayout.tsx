@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { useAuth } from '../context/AuthContext'
-import { LogOut, Package, Home, MessageCircle, Settings, ChevronLeft } from 'lucide-react'
+import { LogOut, Package, Home, MessageCircle, Settings, ChevronLeft, Database } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSidebar } from '../context/SidebarContext'
@@ -99,8 +99,8 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
                 href="/admin/dashboard"
                 className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   router.pathname === '/admin/dashboard'
-                    ? 'text-white shadow-md transform scale-105 hover:bg-amber-100 hover:text-amber-900'
-                    : 'text-amber-800 hover:bg-amber-100 hover:text-amber-900'
+                    ? 'text-white shadow-md transform scale-105 hover:bg-amber-100'
+                    : 'text-amber-800 hover:bg-amber-100'
                 }`}
                 style={{
                   backgroundColor: router.pathname === '/admin/dashboard' ? 'rgb(96 70 41)' : 'transparent'
@@ -114,8 +114,8 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
                 href="/admin/configuraciones"
                 className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   router.pathname === '/admin/configuraciones'
-                    ? 'text-white shadow-md transform scale-105 hover:bg-amber-100 hover:text-amber-900'
-                    : 'text-amber-800 hover:bg-amber-100 hover:text-amber-900'
+                    ? 'text-white shadow-md transform scale-105 hover:bg-amber-100'
+                    : 'text-amber-800 hover:bg-amber-100'
                 }`}
                 style={{
                   backgroundColor: router.pathname === '/admin/configuraciones' ? 'rgb(96 70 41)' : 'transparent'
@@ -129,8 +129,8 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
                 href="/admin/whatsapp"
                 className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   router.pathname === '/admin/whatsapp'
-                    ? 'text-white shadow-md transform scale-105 hover:bg-amber-100 hover:text-amber-900'
-                    : 'text-amber-800 hover:bg-amber-100 hover:text-amber-900'
+                    ? 'text-white shadow-md transform scale-105 hover:bg-amber-100'
+                    : 'text-amber-800 hover:bg-amber-100'
                 }`}
                 style={{
                   backgroundColor: router.pathname === '/admin/whatsapp' ? 'rgb(96 70 41)' : 'transparent'
@@ -141,8 +141,23 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
               </Link>
 
               <Link
+                href="/admin/backup"
+                className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  router.pathname === '/admin/backup'
+                    ? 'text-white shadow-md transform scale-105 hover:bg-amber-100'
+                    : 'text-amber-800 hover:bg-amber-100'
+                }`}
+                style={{
+                  backgroundColor: router.pathname === '/admin/backup' ? 'rgb(96 70 41)' : 'transparent'
+                }}
+              >
+                <Database className="w-5 h-5 mr-3" />
+                Backups
+              </Link>
+
+              <Link
                 href="/"
-                className="flex items-center px-4 py-3 text-sm font-medium text-amber-800 rounded-lg hover:bg-amber-100 hover:text-amber-900 transition-all duration-200"
+                className="flex items-center px-4 py-3 text-sm font-medium text-amber-800 rounded-lg hover:bg-amber-100 transition-all duration-200"
               >
                 <Home className="w-5 h-5 mr-3" />
                 Ver Tienda

@@ -62,7 +62,6 @@ export default function SideCart({ isOpen, onClose, onCheckout }: Omit<SideCartP
   const total = subtotal - descuentos
   const faltante = Math.max(0, minFreeShipping - total)
   const progreso = Math.min(100, (total / minFreeShipping) * 100)
-  console.log({ total, minFreeShipping, progreso })
 
   return (
     <div className={`fixed inset-0 z-50 flex justify-end transition-all duration-300 ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
@@ -139,7 +138,7 @@ export default function SideCart({ isOpen, onClose, onCheckout }: Omit<SideCartP
                 <div className="flex-1 min-w-0">
                   <div className="font-bold truncate mb-1" style={{ color: 'black' }}>{item.producto.nombre}</div>
                   <div className="text-xs mb-2 px-2 py-1 rounded-full inline-block" style={{ background: 'rgba(255, 184, 76, 0.2)', color: '#B88C3A' }}>
-                    {item.producto.categoria.nombre}
+                    {item.producto.categoria && item.producto.categoria.nombre ? item.producto.categoria.nombre : 'Sin categoría'}
                   </div>
                   {item.gustoId && (
                     <div className="text-xs mb-2 px-2 py-1 rounded-full inline-block" style={{ background: 'rgba(255, 184, 76, 0.2)', color: '#B88C3A' }}>

@@ -15,7 +15,7 @@ transporter.verify(function (error, success) {
   if (error) {
     console.error("❌ Error en configuración Gmail:", error);
   } else {
-    console.log("✅ Servidor Gmail listo para enviar emails");
+    // console.log("✅ Servidor Gmail listo para enviar emails");
   }
 });
 

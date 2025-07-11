@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { ShoppingCart, Search, Filter, Star, TrendingUp, Zap, Package } from 'lucide-react'
 import { useCart } from '../context/CartContext'
-import { productosApi } from '../utils/api'
+import { productosApi, categoriasApi } from '../utils/api'
 import ProductCard from '../components/ProductCard'
 import Navbar from '../components/Navbar'
 import toast from 'react-hot-toast'
@@ -21,6 +21,8 @@ export interface Producto {
   categoria: { _id: string; nombre: string }
   stock: number
   gustos?: { _id: string; nombre: string; descripcion?: string }[]
+  stockPorGusto?: { gusto: { _id: string; nombre: string; descripcion?: string }; stock: number }[]
+  activo: boolean
 }
 
 export default function Home() {
@@ -39,16 +41,17 @@ export default function Home() {
     mensaje: ''
   })
   const router = useRouter();
-
-  const categorias = [
-    { id: 'ropa', name: 'Ropa', icon: '👕' },
-    { id: 'accesorios', name: 'Accesorios', icon: '💍' },
-    { id: 'calzado', name: 'Calzado', icon: '👟' },
-    { id: 'otros', name: 'Otros', icon: '📦' }
-  ]
+  const [categorias, setCategorias] = useState<{ _id: string; nombre: string }[]>([])
 
   useEffect(() => {
     loadProductos()
+    categoriasApi.getAll().then(res => {
+      if (res.success && Array.isArray(res.data)) {
+        setCategorias(res.data)
+      } else {
+        setCategorias([])
+      }
+    })
   }, [])
 
   useEffect(() => {
@@ -76,18 +79,13 @@ export default function Home() {
   const loadProductos = async () => {
     try {
       setLoading(true)
-      console.log('Cargando productos...')
       const response = await productosApi.getAll() as { success: boolean, data?: Producto[] }
-      console.log('Respuesta de la API:', response)
       if (response.success && response.data) {
-        console.log('Productos cargados:', response.data)
         setProductos(response.data || [])
       } else {
-        console.log('Error en la respuesta:', response)
         toast.error('Error al cargar productos')
       }
     } catch (error) {
-      console.error('Error cargando productos:', error)
       toast.error('Error al cargar productos')
     } finally {
       setLoading(false)
@@ -141,18 +139,14 @@ export default function Home() {
   }
 
   const filteredProductos = productos.filter(producto => {
+    if (!producto.categoria || !producto.activo) return false;
     const matchesSearch = producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          producto.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = !selectedCategory || producto.categoria.nombre === selectedCategory
+    const matchesCategory = !selectedCategory || (producto.categoria && producto.categoria._id === selectedCategory)
     return matchesSearch && matchesCategory
   })
 
   const cartItemCount = state.items.reduce((total, item) => total + item.cantidad, 0)
-
-  console.log('Productos en estado:', productos)
-  console.log('Productos filtrados:', filteredProductos)
-  console.log('Search term:', searchTerm)
-  console.log('Selected category:', selectedCategory)
 
   return (
     <>
@@ -260,16 +254,13 @@ export default function Home() {
                   {/* Select de categorías con ícono de filtro dentro */}
                   <div className="relative w-48 flex-shrink-0">
                     <Listbox value={selectedCategory} onChange={setSelectedCategory}>
-                                              <Listbox.Button className="relative w-full cursor-pointer rounded-r-xl py-4 pl-12 pr-10 text-left text-base focus:outline-none focus:ring-0 border-none shadow-none transition-all duration-300 hover:bg-amber-50" style={{ color: 'rgb(124, 79, 0)' }}>
-                                                  <span className="flex items-center">
-                            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
-                            {selectedCategory
-                              ? <>
-                                  <span className="ml-6 mr-2 text-lg">{categorias.find(c => c.id === selectedCategory)?.icon}</span>
-                                  <span className="font-medium">{categorias.find(c => c.id === selectedCategory)?.name}</span>
-                                </>
-                              : <span className="ml-6 font-medium">Todas las categorías</span>}
-                          </span>
+                      <Listbox.Button className="relative w-full cursor-pointer rounded-r-xl py-4 pl-12 pr-10 text-left text-base focus:outline-none focus:ring-0 border-none shadow-none transition-all duration-300 hover:bg-amber-50" style={{ color: 'rgb(124, 79, 0)' }}>
+                        <span className="flex items-center">
+                          <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                          {selectedCategory
+                            ? <span className="ml-6 font-medium">{categorias.find(c => c._id === selectedCategory)?.nombre}</span>
+                            : <span className="ml-6 font-medium">Todas las categorías</span>}
+                        </span>
                         <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                           <ChevronUpDownIcon className="h-5 w-5 text-gray-600 transition-transform duration-300" aria-hidden="true" />
                         </span>
@@ -290,22 +281,22 @@ export default function Home() {
                             }`
                           }
                         >
-                                                      {({ selected }) => (
-                              <>
-                                <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
-                                <span className="ml-8 block truncate font-medium">Todas las categorías</span>
-                                {selected ? (
-                                  <span className="absolute inset-y-0 right-5 flex items-center text-amber-600">
-                                    <CheckIcon className="h-5 w-5" aria-hidden="true" />
-                                  </span>
-                                ) : null}
-                              </>
-                            )}
+                          {({ selected }) => (
+                            <>
+                              <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                              <span className="ml-8 block truncate font-medium">Todas las categorías</span>
+                              {selected ? (
+                                <span className="absolute inset-y-0 right-5 flex items-center text-amber-600">
+                                  <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                                </span>
+                              ) : null}
+                            </>
+                          )}
                         </Listbox.Option>
                         {categorias.map((categoria) => (
                           <Listbox.Option
-                            key={categoria.id}
-                            value={categoria.id}
+                            key={categoria._id}
+                            value={categoria._id}
                             className={({ active }) =>
                               `cursor-pointer select-none relative py-5 pl-14 pr-6 transition-all duration-200 ${
                                 active ? 'bg-amber-50 text-amber-900' : 'text-gray-900'
@@ -314,10 +305,7 @@ export default function Home() {
                           >
                             {({ selected }) => (
                               <>
-                                <span className="ml-8 block truncate font-medium">
-                                  <span className="mr-4 text-lg">{categoria.icon}</span>
-                                  {categoria.name}
-                                </span>
+                                <span className="ml-8 block truncate font-medium">{categoria.nombre}</span>
                                 {selected ? (
                                   <span className="absolute inset-y-0 right-5 flex items-center text-amber-600">
                                     <CheckIcon className="h-5 w-5" aria-hidden="true" />
@@ -357,7 +345,7 @@ export default function Home() {
                       color: 'rgb(124, 79, 0)',
                       border: '1px solid rgba(255, 219, 126, 0.5)'
                     }}>
-                      📂 {categorias.find(c => c.id === selectedCategory)?.icon} {categorias.find(c => c.id === selectedCategory)?.name}
+                      📂 {categorias.find(c => c._id === selectedCategory)?.nombre}
                       <button
                         onClick={() => setSelectedCategory('')}
                         className="ml-2 hover:text-amber-800 transition-colors duration-200"
@@ -436,8 +424,8 @@ export default function Home() {
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto mb-12">
                       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
-                        <div className="text-3xl font-bold text-gray-700 mb-2">{productos.length}</div>
-                        <div className="text-sm font-medium text-gray-600">Productos Totales</div>
+                        <div className="text-3xl font-bold text-gray-700 mb-2">{productos.filter(p => p.activo).length}</div>
+                        <div className="text-sm font-medium text-gray-600">Productos Activos</div>
                       </div>
                       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
                         <div className="text-3xl font-bold text-gray-700 mb-2">{filteredProductos.length}</div>
@@ -457,19 +445,15 @@ export default function Home() {
                     {filteredProductos.map((producto, index) => (
                       <div
                         key={producto._id}
-                        className="group transform hover:scale-105 transition-all duration-300"
+                        className="group"
                         style={{
                           animationDelay: `${index * 150}ms`
                         }}
                       >
-                        <div className="relative">
-                          <div className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden hover:border-gray-200">
-                            <ProductCard
-                              producto={producto}
-                              onAddToCart={(gustoId) => handleAddToCart(producto, gustoId)}
-                            />
-                          </div>
-                        </div>
+                        <ProductCard
+                          producto={producto}
+                          onAddToCart={(gustoId) => handleAddToCart(producto, gustoId)}
+                        />
                       </div>
                     ))}
                   </div>

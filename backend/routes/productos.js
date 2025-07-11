@@ -13,6 +13,7 @@ router.get("/", async (req, res) => {
     const productos = await Producto.find(query)
       .populate("categoria")
       .populate("gustos")
+      .populate("stockPorGusto.gusto")
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit));
     res.json(productos);
@@ -27,7 +28,10 @@ router.get("/:id", async (req, res) => {
     const producto = await Producto.findOne({
       _id: req.params.id,
       activo: true,
-    });
+    })
+      .populate("categoria")
+      .populate("gustos")
+      .populate("stockPorGusto.gusto");
 
     if (!producto) {
       return res.status(404).json({
@@ -38,6 +42,42 @@ router.get("/:id", async (req, res) => {
     res.json(producto);
   } catch (error) {
     console.error("Error obteniendo producto:", error);
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+});
+
+// GET /productos/:id/stock/:gustoId - Obtener stock de un gusto específico (público)
+router.get("/:id/stock/:gustoId", async (req, res) => {
+  try {
+    const producto = await Producto.findOne({
+      _id: req.params.id,
+      activo: true,
+    }).populate("stockPorGusto.gusto");
+
+    if (!producto) {
+      return res.status(404).json({
+        message: "Producto no encontrado",
+      });
+    }
+
+    const stockGusto = producto.stockPorGusto.find(
+      (sg) => sg.gusto._id.toString() === req.params.gustoId
+    );
+
+    if (!stockGusto) {
+      return res.status(404).json({
+        message: "Gusto no encontrado en este producto",
+      });
+    }
+
+    res.json({
+      gusto: stockGusto.gusto,
+      stock: stockGusto.stock,
+    });
+  } catch (error) {
+    console.error("Error obteniendo stock del gusto:", error);
     res.status(500).json({
       message: "Error interno del servidor",
     });
@@ -63,24 +103,87 @@ function isValidBase64Image(base64, maxSizeMB = 2) {
   return sizeInBytes <= maxSizeMB * 1024 * 1024;
 }
 
+// Función para validar múltiples imágenes
+function validateImages(imagenes) {
+  if (!Array.isArray(imagenes)) return false;
+  if (imagenes.length === 0) return false;
+  if (imagenes.length > 10) return false;
+
+  for (const imagen of imagenes) {
+    if (!isValidBase64Image(imagen)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 // POST /productos - Crear producto (protegido)
 router.post("/", verifyToken, async (req, res) => {
   try {
-    const { nombre, descripcion, precio, imagen, categoria, stock, gustos } =
-      req.body;
+    const {
+      nombre,
+      descripcion,
+      precio,
+      imagen,
+      imagenes,
+      categoria,
+      stock,
+      gustos,
+      stockPorGusto,
+    } = req.body;
 
     // Validar campos requeridos
-    if (!nombre || !descripcion || !precio || !imagen || !categoria) {
+    if (!nombre || !descripcion || !precio || !categoria) {
       return res.status(400).json({
         message: "Todos los campos son requeridos",
       });
     }
 
-    // Validar imagen
-    if (imagen.startsWith("data:image/")) {
+    // Validar imágenes
+    let imagenesValidas = [];
+
+    // Si se proporcionan múltiples imágenes, validarlas
+    if (imagenes && Array.isArray(imagenes) && imagenes.length > 0) {
+      if (!validateImages(imagenes)) {
+        return res.status(400).json({
+          message:
+            "Las imágenes deben ser PNG, JPG o JPEG y pesar menos de 2MB cada una. Máximo 10 imágenes.",
+        });
+      }
+      imagenesValidas = imagenes;
+    }
+    // Si solo se proporciona una imagen, validarla
+    else if (imagen) {
       if (!isValidBase64Image(imagen)) {
         return res.status(400).json({
           message: "La imagen debe ser PNG, JPG o JPEG y pesar menos de 2MB",
+        });
+      }
+      imagenesValidas = [imagen];
+    } else {
+      return res.status(400).json({
+        message: "Al menos una imagen es requerida",
+      });
+    }
+
+    // Validar que si hay gustos, debe haber stock por gusto
+    if (gustos && gustos.length > 0) {
+      if (!stockPorGusto || stockPorGusto.length === 0) {
+        return res.status(400).json({
+          message: "Debe especificar el stock para cada gusto seleccionado",
+        });
+      }
+
+      // Validar que todos los gustos tengan stock definido
+      const gustosIds = gustos.map((g) => g.toString());
+      const stockGustosIds = stockPorGusto.map((s) => s.gusto.toString());
+
+      const gustosSinStock = gustosIds.filter(
+        (id) => !stockGustosIds.includes(id)
+      );
+      if (gustosSinStock.length > 0) {
+        return res.status(400).json({
+          message: "Todos los gustos seleccionados deben tener stock definido",
         });
       }
     }
@@ -89,10 +192,12 @@ router.post("/", verifyToken, async (req, res) => {
       nombre,
       descripcion,
       precio: parseFloat(precio),
-      imagen,
+      imagen: imagenesValidas[0], // Primera imagen como imagen principal
+      imagenes: imagenesValidas,
       categoria,
       stock: parseInt(stock) || 0,
       gustos: gustos || [],
+      stockPorGusto: stockPorGusto || [],
     });
 
     await producto.save();
@@ -123,10 +228,12 @@ router.put("/:id", verifyToken, async (req, res) => {
       descripcion,
       precio,
       imagen,
+      imagenes,
       categoria,
       stock,
       activo,
       gustos,
+      stockPorGusto,
     } = req.body;
 
     const producto = await Producto.findById(req.params.id);
@@ -137,11 +244,44 @@ router.put("/:id", verifyToken, async (req, res) => {
       });
     }
 
-    // Validar imagen si se actualiza
-    if (imagen && imagen.startsWith("data:image/")) {
+    // Validar imágenes si se actualizan
+    let imagenesValidas = producto.imagenes || [producto.imagen];
+
+    if (imagenes && Array.isArray(imagenes) && imagenes.length > 0) {
+      if (!validateImages(imagenes)) {
+        return res.status(400).json({
+          message:
+            "Las imágenes deben ser PNG, JPG o JPEG y pesar menos de 2MB cada una. Máximo 10 imágenes.",
+        });
+      }
+      imagenesValidas = imagenes;
+    } else if (imagen && imagen.startsWith("data:image/")) {
       if (!isValidBase64Image(imagen)) {
         return res.status(400).json({
           message: "La imagen debe ser PNG, JPG o JPEG y pesar menos de 2MB",
+        });
+      }
+      imagenesValidas = [imagen];
+    }
+
+    // Validar que si hay gustos, debe haber stock por gusto
+    if (gustos && gustos.length > 0) {
+      if (!stockPorGusto || stockPorGusto.length === 0) {
+        return res.status(400).json({
+          message: "Debe especificar el stock para cada gusto seleccionado",
+        });
+      }
+
+      // Validar que todos los gustos tengan stock definido
+      const gustosIds = gustos.map((g) => g.toString());
+      const stockGustosIds = stockPorGusto.map((s) => s.gusto.toString());
+
+      const gustosSinStock = gustosIds.filter(
+        (id) => !stockGustosIds.includes(id)
+      );
+      if (gustosSinStock.length > 0) {
+        return res.status(400).json({
+          message: "Todos los gustos seleccionados deben tener stock definido",
         });
       }
     }
@@ -150,11 +290,15 @@ router.put("/:id", verifyToken, async (req, res) => {
     if (nombre) producto.nombre = nombre;
     if (descripcion) producto.descripcion = descripcion;
     if (precio) producto.precio = parseFloat(precio);
-    if (imagen) producto.imagen = imagen;
+    if (imagenesValidas.length > 0) {
+      producto.imagen = imagenesValidas[0]; // Primera imagen como imagen principal
+      producto.imagenes = imagenesValidas;
+    }
     if (categoria) producto.categoria = categoria;
     if (stock !== undefined) producto.stock = parseInt(stock);
     if (activo !== undefined) producto.activo = activo;
     if (gustos) producto.gustos = gustos;
+    if (stockPorGusto) producto.stockPorGusto = stockPorGusto;
 
     await producto.save();
 
@@ -196,6 +340,31 @@ router.delete("/:id", verifyToken, async (req, res) => {
     });
   } catch (error) {
     console.error("Error eliminando producto:", error);
+    res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+});
+
+// DELETE /productos/:id/permanent - Eliminar producto definitivamente (protegido)
+router.delete("/:id/permanent", verifyToken, async (req, res) => {
+  try {
+    const producto = await Producto.findById(req.params.id);
+
+    if (!producto) {
+      return res.status(404).json({
+        message: "Producto no encontrado",
+      });
+    }
+
+    // Eliminación definitiva de la base de datos
+    await Producto.findByIdAndDelete(req.params.id);
+
+    res.json({
+      message: "Producto eliminado definitivamente de la base de datos",
+    });
+  } catch (error) {
+    console.error("Error eliminando producto definitivamente:", error);
     res.status(500).json({
       message: "Error interno del servidor",
     });

@@ -52,6 +52,8 @@ async function apiRequest<T>(
 export const productosApi = {
   getAll: () => apiRequest('/api/productos'),
   getById: (id: string) => apiRequest(`/api/productos/${id}`),
+  getStockByGusto: (productoId: string, gustoId: string) => 
+    apiRequest(`/api/productos/${productoId}/stock/${gustoId}`),
   create: (producto: any, token: string) =>
     apiRequest('/api/productos', {
       method: 'POST',
@@ -70,6 +72,13 @@ export const productosApi = {
     }),
   delete: (id: string, token: string) =>
     apiRequest(`/api/productos/${id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  permanentDelete: (id: string, token: string) =>
+    apiRequest(`/api/productos/${id}/permanent`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -103,6 +112,21 @@ export const pedidosApi = {
       method: 'POST',
       body: JSON.stringify(pedido),
     }),
+  getAll: (token: string, params?: { estado?: string; page?: number; limit?: number }) => {
+    const queryParams = new URLSearchParams()
+    if (params?.estado) queryParams.append('estado', params.estado)
+    if (params?.page) queryParams.append('page', params.page.toString())
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+    
+    const queryString = queryParams.toString()
+    const endpoint = `/api/pedidos${queryString ? `?${queryString}` : ''}`
+    
+    return apiRequest(endpoint, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+  },
 }
 
 export const configApi = {
@@ -189,10 +213,124 @@ export const configApi = {
 // Funciones específicas para gustos y categorías
 export const gustosApi = {
   getAll: () => apiRequest('/api/config/gustos'),
-  // Puedes agregar create, update, delete si lo necesitas
+  create: (gusto: { nombre: string; descripcion?: string }, token: string) =>
+    apiRequest('/api/config/gustos', {
+      method: 'POST',
+      body: JSON.stringify(gusto),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  update: (id: string, gusto: { nombre: string; descripcion?: string }, token: string) =>
+    apiRequest(`/api/config/gustos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(gusto),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  delete: (id: string, token: string) =>
+    apiRequest(`/api/config/gustos/${id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
 }
 
 export const categoriasApi = {
   getAll: () => apiRequest('/api/config/categorias'),
-  // Puedes agregar create, update, delete si lo necesitas
+  create: (categoria: { nombre: string; descripcion?: string }, token: string) =>
+    apiRequest('/api/config/categorias', {
+      method: 'POST',
+      body: JSON.stringify(categoria),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  update: (id: string, categoria: { nombre: string; descripcion?: string }, token: string) =>
+    apiRequest(`/api/config/categorias/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(categoria),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  delete: (id: string, token: string) =>
+    apiRequest(`/api/config/categorias/${id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+} 
+
+// Funciones específicas para backup
+export const backupApi = {
+  getAll: (token: string) =>
+    apiRequest('/api/backup', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  create: (token: string) =>
+    apiRequest('/api/backup', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  restore: (fileName: string, token: string) =>
+    apiRequest(`/api/backup/restore/${fileName}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  delete: (fileName: string, token: string) =>
+    apiRequest(`/api/backup/${fileName}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  clean: (keepCount: number, token: string) =>
+    apiRequest('/api/backup/clean', {
+      method: 'POST',
+      body: JSON.stringify({ keepCount }),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  download: (fileName: string, token: string) => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://smoq-proyect-production.up.railway.app'
+    const url = `${API_URL}/api/backup/download/${fileName}`
+    
+    // Crear un enlace temporal para descarga
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    
+    // Agregar headers de autorización
+    fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    .then(response => {
+      if (response.ok) {
+        return response.blob()
+      }
+      throw new Error('Error al descargar')
+    })
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob)
+      link.href = url
+      link.click()
+      window.URL.revokeObjectURL(url)
+    })
+    .catch(error => {
+      console.error('Error descargando backup:', error)
+    })
+  },
 } 

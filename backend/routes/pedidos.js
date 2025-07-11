@@ -1,6 +1,7 @@
 const express = require("express");
 const Pedido = require("../models/Pedido");
 const transporter = require("../config/email");
+const verifyToken = require("../middleware/verifyToken");
 const router = express.Router();
 
 // POST /pedidos - Crear pedido y enviar por email
@@ -147,7 +148,6 @@ router.post("/", async (req, res) => {
     // Enviar email
     try {
       await transporter.sendMail(mailOptions);
-      console.log("✅ Email enviado correctamente");
     } catch (emailError) {
       console.error("❌ Error enviando email:", emailError);
       // No fallar el pedido si el email falla
@@ -175,7 +175,7 @@ router.post("/", async (req, res) => {
 });
 
 // GET /pedidos - Obtener pedidos (para admin, protegido)
-router.get("/", async (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   try {
     const { estado, page = 1, limit = 20 } = req.query;
 

@@ -99,7 +99,7 @@ export default function CartStep1({ onNext }: CartStep1Props) {
                     </div>
                     <div className="flex flex-wrap gap-1 mb-2 justify-center sm:justify-start">
                       <span className="px-2 py-1 rounded-full text-xs font-medium" style={{ background: 'rgba(255, 184, 76, 0.2)', color: 'rgb(184, 140, 58)' }}>
-                        {item.producto.categoria.nombre}
+                        {item.producto.categoria && item.producto.categoria.nombre ? item.producto.categoria.nombre : 'Sin categoría'}
                       </span>
                       {item.gustoId && (
                         <span className="px-2 py-1 rounded-full text-xs font-medium" style={{ background: 'rgba(255, 184, 76, 0.2)', color: 'rgb(184, 140, 58)' }}>
