@@ -1,5 +1,5 @@
 import { ShoppingCart, Zap } from 'lucide-react'
-import { formatPrice } from '../lib/helpers'
+import { formatPrice, getStockForGusto } from '../lib/helpers'
 import ImageSlider from './ImageSlider'
 import { useState } from 'react'
 
@@ -38,10 +38,8 @@ export default function ProductCard({ producto, onAddToCart }: ProductCardProps)
   };
 
   // Obtener el stock del gusto seleccionado
-  const getStockForGusto = (gustoId: string) => {
-    if (!producto.stockPorGusto) return 0;
-    const stockGusto = producto.stockPorGusto.find(sg => sg.gusto._id === gustoId);
-    return stockGusto ? stockGusto.stock : 0;
+  const getStockForGustoLocal = (gustoId: string) => {
+    return getStockForGusto(producto, gustoId);
   };
 
 
@@ -54,7 +52,7 @@ export default function ProductCard({ producto, onAddToCart }: ProductCardProps)
     
     // Verificar stock específico si hay gusto seleccionado
     if (producto.gustos && producto.gustos.length > 0 && selectedGusto) {
-      const stockGusto = getStockForGusto(selectedGusto);
+      const stockGusto = getStockForGustoLocal(selectedGusto);
       if (stockGusto <= 0) {
         setError('Este gusto no tiene stock disponible')
         return
@@ -74,12 +72,15 @@ export default function ProductCard({ producto, onAddToCart }: ProductCardProps)
   const isAvailable = () => {
     if (producto.gustos && producto.gustos.length > 0) {
       // Si tiene gustos, verificar si hay stock en algún gusto
-      const hasAnyStock = producto.stockPorGusto && producto.stockPorGusto.some(sg => sg.stock > 0);
+      const hasAnyStock = producto.stockPorGusto && producto.stockPorGusto.some(sg => {
+        // Verificar que sg.gusto no sea null y tenga la estructura correcta
+        return sg.stock > 0;
+      });
       if (!hasAnyStock) return false;
       
       // Si hay un gusto seleccionado, verificar su stock específico
       if (selectedGusto) {
-        return getStockForGusto(selectedGusto) > 0;
+        return getStockForGustoLocal(selectedGusto) > 0;
       }
       
       // Si no hay gusto seleccionado pero hay stock disponible, mostrar como disponible

@@ -3,7 +3,7 @@ import Head from 'next/head'
 import { Plus, Edit, Trash2, Package, DollarSign, Users, ShoppingCart } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { productosApi, gustosApi, categoriasApi } from '../../utils/api'
-import { formatPrice } from '../../lib/helpers'
+import { formatPrice, getGustoId } from '../../lib/helpers'
 import AdminLayout from '../../components/AdminLayout'
 import ConfirmModal from '../../components/ConfirmModal'
 import toast from 'react-hot-toast'
@@ -195,7 +195,10 @@ export default function AdminDashboard() {
       categoria: producto.categoria && producto.categoria._id ? producto.categoria._id : (categorias.length > 0 ? categorias[0]._id : ''),
       stock: producto.stock.toString(),
       gustos: producto.gustos?.map(g => g._id) || [],
-      stockPorGusto: producto.stockPorGusto?.map(sg => ({ gusto: sg.gusto._id, stock: sg.stock })) || []
+      stockPorGusto: producto.stockPorGusto?.map(sg => ({ 
+        gusto: getGustoId(sg.gusto), 
+        stock: sg.stock 
+      })) || []
     })
     setImagePreview(producto.imagen)
     setImageFile(null)
@@ -741,8 +744,8 @@ export default function AdminDashboard() {
                         {producto.stockPorGusto && producto.stockPorGusto.length > 0 ? (
                           <div className="space-y-1">
                             {producto.stockPorGusto.map(sg => {
-                              const gusto = gustos.find(g => g._id === sg.gusto._id || g._id === sg.gusto);
-                              const gustoId = typeof sg.gusto === 'string' ? sg.gusto : sg.gusto._id;
+                              const gustoId = getGustoId(sg.gusto);
+                              const gusto = gustos.find(g => g._id === gustoId);
                               return (
                                 <div key={gustoId} className="flex items-center justify-between">
                                   <span className="text-xs font-medium text-gray-700">
