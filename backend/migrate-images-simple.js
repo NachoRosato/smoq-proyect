@@ -2,8 +2,7 @@ const mongoose = require("mongoose");
 const Producto = require("./models/Producto");
 
 // Configuración directa de MongoDB (usar la misma que en env.example)
-const MONGODB_URI =
-  "mongodb+srv://ignaciorosato:pXY9elz95BIzW8yb@clustersmoq.5vt0p1y.mongodb.net/?retryWrites=true&w=majority&appName=ClusterSmoq";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/smoq";
 
 async function migrateImages() {
   try {

@@ -81,5 +81,9 @@ app.use("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
   console.log(`📧 SMTP configurado: ${process.env.SMTP_HOST}`);
-  console.log(`🗄️  MongoDB: ${process.env.MONGODB_URI}`);
+  console.log(
+    `🗄️  MongoDB: ${
+      process.env.MONGODB_URI ? "✅ Configurado" : "❌ No configurado"
+    }`
+  );
 });
