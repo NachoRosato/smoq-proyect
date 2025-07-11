@@ -163,6 +163,12 @@ export default function Configuraciones() {
 
   const handleCatSave = async (e: any) => {
     e.preventDefault()
+    
+    if (!auth.token) {
+      toast.error('No tienes permisos para realizar esta acción')
+      return
+    }
+    
     setCatLoading(true)
     try {
       let res
@@ -179,7 +185,7 @@ export default function Configuraciones() {
         const reload = await categoriasApi.getAll();
         setCategorias(reload.success && Array.isArray(reload.data) ? reload.data : [])
       } else {
-        toast.error(res.error || 'Error')
+        toast.error(res.error || res.message || 'Error')
       }
     } finally {
       setCatLoading(false)
@@ -194,6 +200,12 @@ export default function Configuraciones() {
 
   const handleCatDelete = async (id: string) => {
     if (!window.confirm('¿Eliminar esta categoría?')) return
+    
+    if (!auth.token) {
+      toast.error('No tienes permisos para realizar esta acción')
+      return
+    }
+    
     setCatLoading(true)
     try {
       const res = await deleteCategoria(id)
@@ -202,7 +214,7 @@ export default function Configuraciones() {
         const reload = await categoriasApi.getAll();
         setCategorias(reload.success && Array.isArray(reload.data) ? reload.data : [])
       } else {
-        toast.error(res.error || 'Error')
+        toast.error(res.error || res.message || 'Error')
       }
     } finally {
       setCatLoading(false)
@@ -211,6 +223,12 @@ export default function Configuraciones() {
 
   const handleGustoSave = async (e: any) => {
     e.preventDefault()
+    
+    if (!auth.token) {
+      toast.error('No tienes permisos para realizar esta acción')
+      return
+    }
+    
     setGustoLoading(true)
     try {
       let res
@@ -227,7 +245,7 @@ export default function Configuraciones() {
         const reload = await gustosApi.getAll();
         setGustos(reload.success && Array.isArray(reload.data) ? reload.data : [])
       } else {
-        toast.error(res.error || 'Error')
+        toast.error(res.error || res.message || 'Error')
       }
     } finally {
       setGustoLoading(false)
@@ -242,6 +260,12 @@ export default function Configuraciones() {
 
   const handleGustoDelete = async (id: string) => {
     if (!window.confirm('¿Eliminar este gusto?')) return
+    
+    if (!auth.token) {
+      toast.error('No tienes permisos para realizar esta acción')
+      return
+    }
+    
     setGustoLoading(true)
     try {
       const res = await deleteGusto(id)
@@ -250,7 +274,7 @@ export default function Configuraciones() {
         const reload = await gustosApi.getAll();
         setGustos(reload.success && Array.isArray(reload.data) ? reload.data : [])
       } else {
-        toast.error(res.error || 'Error')
+        toast.error(res.error || res.message || 'Error')
       }
     } finally {
       setGustoLoading(false)
