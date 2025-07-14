@@ -48,6 +48,13 @@ const productoSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    categoriaEliminada: {
+      type: Boolean,
+      default: false,
+    },
+    fechaDesactivacion: {
+      type: Date,
+    },
     gustos: [
       {
         type: mongoose.Schema.Types.ObjectId,

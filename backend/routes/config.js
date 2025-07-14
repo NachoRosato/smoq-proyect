@@ -4,6 +4,13 @@ const Config = require("../models/Config");
 const verifyToken = require("../middleware/verifyToken");
 const Categoria = require("../models/Categoria");
 const Gusto = require("../models/Gusto");
+const {
+  updateProductosOnCategoriaDelete,
+  updateProductosOnGustoDelete,
+  updateProductosOnCategoriaUpdate,
+  updateProductosOnGustoUpdate,
+  cleanupOrphanReferences,
+} = require("../utils/referentialIntegrity");
 
 // Obtener configuración
 router.get("/", async (req, res) => {
@@ -99,14 +106,30 @@ router.post("/categorias", verifyToken, async (req, res) => {
 router.put("/categorias/:id", verifyToken, async (req, res) => {
   try {
     const { nombre, descripcion } = req.body;
+
+    // Obtener datos anteriores para comparación
+    const categoriaAnterior = await Categoria.findById(req.params.id);
+    if (!categoriaAnterior) {
+      return res.status(404).json({ error: "Categoría no encontrada" });
+    }
+
     const categoria = await Categoria.findByIdAndUpdate(
       req.params.id,
       { nombre, descripcion },
       { new: true, runValidators: true }
     );
-    if (!categoria)
-      return res.status(404).json({ error: "Categoría no encontrada" });
-    res.json(categoria);
+
+    // Actualizar productos que usan esta categoría
+    const updateResult = await updateProductosOnCategoriaUpdate(
+      req.params.id,
+      categoriaAnterior,
+      categoria
+    );
+
+    res.json({
+      categoria,
+      productosActualizados: updateResult,
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -116,9 +139,17 @@ router.put("/categorias/:id", verifyToken, async (req, res) => {
 router.delete("/categorias/:id", verifyToken, async (req, res) => {
   try {
     const categoria = await Categoria.findByIdAndDelete(req.params.id);
-    if (!categoria)
+    if (!categoria) {
       return res.status(404).json({ error: "Categoría no encontrada" });
-    res.json({ mensaje: "Categoría eliminada" });
+    }
+
+    // Actualizar productos que usan esta categoría
+    const updateResult = await updateProductosOnCategoriaDelete(req.params.id);
+
+    res.json({
+      mensaje: "Categoría eliminada",
+      productosActualizados: updateResult,
+    });
   } catch (err) {
     res.status(500).json({ error: "Error al eliminar categoría" });
   }
@@ -150,13 +181,30 @@ router.post("/gustos", verifyToken, async (req, res) => {
 router.put("/gustos/:id", verifyToken, async (req, res) => {
   try {
     const { nombre, descripcion } = req.body;
+
+    // Obtener datos anteriores para comparación
+    const gustoAnterior = await Gusto.findById(req.params.id);
+    if (!gustoAnterior) {
+      return res.status(404).json({ error: "Gusto no encontrado" });
+    }
+
     const gusto = await Gusto.findByIdAndUpdate(
       req.params.id,
       { nombre, descripcion },
       { new: true, runValidators: true }
     );
-    if (!gusto) return res.status(404).json({ error: "Gusto no encontrado" });
-    res.json(gusto);
+
+    // Actualizar productos que usan este gusto
+    const updateResult = await updateProductosOnGustoUpdate(
+      req.params.id,
+      gustoAnterior,
+      gusto
+    );
+
+    res.json({
+      gusto,
+      productosActualizados: updateResult,
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -166,10 +214,33 @@ router.put("/gustos/:id", verifyToken, async (req, res) => {
 router.delete("/gustos/:id", verifyToken, async (req, res) => {
   try {
     const gusto = await Gusto.findByIdAndDelete(req.params.id);
-    if (!gusto) return res.status(404).json({ error: "Gusto no encontrado" });
-    res.json({ mensaje: "Gusto eliminado" });
+    if (!gusto) {
+      return res.status(404).json({ error: "Gusto no encontrado" });
+    }
+
+    // Actualizar productos que usan este gusto
+    const updateResult = await updateProductosOnGustoDelete(req.params.id);
+
+    res.json({
+      mensaje: "Gusto eliminado",
+      productosActualizados: updateResult,
+    });
   } catch (err) {
     res.status(500).json({ error: "Error al eliminar gusto" });
+  }
+});
+
+// Limpiar referencias huérfanas (solo admin)
+router.post("/cleanup", verifyToken, async (req, res) => {
+  try {
+    const result = await cleanupOrphanReferences();
+    res.json({
+      success: true,
+      message: "Limpieza completada",
+      result,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Error al limpiar referencias huérfanas" });
   }
 });
 
