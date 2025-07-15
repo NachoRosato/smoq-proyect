@@ -79,7 +79,7 @@ export default function Home() {
   const loadProductos = async () => {
     try {
       setLoading(true)
-      const response = await productosApi.getAll() as { success: boolean, data?: Producto[] }
+      const response = await productosApi.getAll({ page: 1, limit: 100 }) as { success: boolean, data?: Producto[] }
       if (response.success && response.data) {
         setProductos(response.data || [])
       } else {

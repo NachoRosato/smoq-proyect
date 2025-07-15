@@ -25,6 +25,8 @@ async function apiRequest<T>(
   try {
     const url = `${API_URL}${endpoint}`
     
+
+    
     const response = await fetch(url, {
       method: options.method || 'GET',
       headers: {
@@ -70,7 +72,16 @@ async function apiRequest<T>(
 
 // Funciones específicas para productos
 export const productosApi = {
-  getAll: () => apiRequest('/api/productos'),
+  getAll: (params?: { page?: number; limit?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    
+    const queryString = queryParams.toString();
+    const endpoint = `/api/productos${queryString ? `?${queryString}` : ''}`;
+    
+    return apiRequest(endpoint);
+  },
   getById: (id: string) => apiRequest(`/api/productos/${id}`),
   getStockByGusto: (productoId: string, gustoId: string) => 
     apiRequest(`/api/productos/${productoId}/stock/${gustoId}`),

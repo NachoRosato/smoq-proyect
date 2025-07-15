@@ -24,6 +24,8 @@ interface Producto {
   fechaDesactivacion?: string
   gustos?: { _id: string; nombre: string; descripcion?: string }[]
   stockPorGusto?: { gusto: { _id: string; nombre: string; descripcion?: string }; stock: number }[]
+  createdAt?: string
+  updatedAt?: string
 }
 
 export default function AdminDashboard() {
@@ -39,6 +41,8 @@ export default function AdminDashboard() {
   const [showPermanentDeleteModal, setShowPermanentDeleteModal] = useState(false)
   const [productToPermanentDelete, setProductToPermanentDelete] = useState<Producto | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [showGustosModal, setShowGustosModal] = useState(false)
+  const [selectedProductGustos, setSelectedProductGustos] = useState<Producto | null>(null)
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -78,6 +82,8 @@ export default function AdminDashboard() {
     })
   }, [auth.token])
 
+
+
   useEffect(() => {
     const newErrors: any = {}
     if (formData.nombre.length > 100) newErrors.nombre = 'Máximo 100 caracteres'
@@ -90,7 +96,7 @@ export default function AdminDashboard() {
   const loadProductos = async () => {
     try {
       setLoading(true)
-      const response = await productosApi.getAll() as { success: boolean, data?: Producto[] }
+      const response = await productosApi.getAll({ page: 1, limit: 100 }) as { success: boolean, data?: Producto[] }
       
       if (response.success && response.data) {
         setProductos(response.data || [])
@@ -118,6 +124,14 @@ export default function AdminDashboard() {
        producto.categoria.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
     
     return matchesStatus && matchesSearch;
+  }).sort((a, b) => {
+    // Si estamos mostrando inactivos, ponerlos primero
+    if (showInactiveProducts) {
+      if (!a.activo && b.activo) return -1;
+      if (a.activo && !b.activo) return 1;
+    }
+    // Por defecto, ordenar por fecha de creación (más recientes primero)
+    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -257,6 +271,11 @@ export default function AdminDashboard() {
   const openPermanentDeleteModal = (producto: Producto) => {
     setProductToPermanentDelete(producto)
     setShowPermanentDeleteModal(true)
+  }
+
+  const openGustosModal = (producto: Producto) => {
+    setSelectedProductGustos(producto)
+    setShowGustosModal(true)
   }
 
   const confirmDelete = async () => {
@@ -513,7 +532,7 @@ export default function AdminDashboard() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Stock total</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {productos.reduce((acc, p) => acc + p.stock, 0)}
+                  {productos.filter(p => p.activo).reduce((acc, p) => acc + p.stock, 0)}
                 </p>
               </div>
             </div>
@@ -754,8 +773,19 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {producto.gustos && producto.gustos.length > 0 ? (
-                          <div className="text-xs text-gray-600">
-                            {producto.gustos.map(g => g.nombre).join(', ')}
+                          <div className="flex items-center gap-2">
+                            <div className="text-xs text-gray-600">
+                              {producto.gustos[0].nombre}
+                            </div>
+                            {producto.gustos.length > 1 && (
+                              <button
+                                onClick={() => openGustosModal(producto)}
+                                className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors duration-200"
+                                title={`Ver todos los gustos (${producto.gustos.length} total)`}
+                              >
+                                +{producto.gustos.length - 1}
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <span className="text-gray-400 text-xs">Sin gustos</span>
@@ -1165,6 +1195,61 @@ export default function AdminDashboard() {
           cancelText="Cancelar"
           type="danger"
         />
+      )}
+
+      {/* Modal de Gustos */}
+      {showGustosModal && selectedProductGustos && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-8 border max-w-md w-full shadow-xl rounded-xl bg-white">
+            <div className="mt-3">
+              <h3 className="text-xl font-semibold text-amber-900 mb-6">
+                Gustos de {selectedProductGustos.nombre}
+              </h3>
+              
+              <div className="space-y-4">
+                {selectedProductGustos.gustos && selectedProductGustos.gustos.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-3">
+                    {selectedProductGustos.gustos.map((gusto, index) => (
+                      <div key={gusto._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center">
+                          <span className="w-6 h-6 bg-amber-100 text-amber-800 rounded-full flex items-center justify-center text-xs font-medium mr-3">
+                            {index + 1}
+                          </span>
+                          <span className="text-sm font-medium text-gray-900">
+                            {gusto.nombre}
+                          </span>
+                        </div>
+                        {gusto.descripcion && (
+                          <span className="text-xs text-gray-500">
+                            {gusto.descripcion}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 mb-2">
+                      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500">Este producto no tiene gustos asignados</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => setShowGustosModal(false)}
+                  className="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </AdminLayout>
   )

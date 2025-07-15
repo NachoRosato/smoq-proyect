@@ -6,16 +6,29 @@ const router = express.Router();
 // GET /productos - Obtener todos los productos (público)
 router.get("/", async (req, res) => {
   try {
-    const { categoria, search, limit = 20, page = 1 } = req.query;
+    const {
+      categoria,
+      search,
+      limit = 20,
+      page = 1,
+      showInactive = false,
+    } = req.query;
     const query = {};
+
+    // Por defecto traer todos los productos (activos e inactivos)
+    // El frontend se encarga de filtrar según necesite
+
     if (categoria) query.categoria = categoria;
     if (search) query.$text = { $search: search };
+
     const productos = await Producto.find(query)
       .populate("categoria")
       .populate("gustos")
       .populate("stockPorGusto.gusto")
+      .sort({ createdAt: -1 }) // Ordenar por fecha de creación, más recientes primero
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit));
+
     res.json(productos);
   } catch (err) {
     res.status(500).json({ error: "Error al obtener productos" });
@@ -84,23 +97,37 @@ router.get("/:id/stock/:gustoId", async (req, res) => {
   }
 });
 
-// Función para validar imagen base64 PNG/JPG y tamaño
-function isValidBase64Image(base64, maxSizeMB = 2) {
-  // Validar que sea PNG o JPG/JPEG
-  if (
-    !base64.startsWith("data:image/png;base64,") &&
-    !base64.startsWith("data:image/jpeg;base64,") &&
-    !base64.startsWith("data:image/jpg;base64,")
-  ) {
-    return false;
+// Función para validar imagen (base64 o URL)
+function isValidImage(image, maxSizeMB = 2) {
+  // Si es base64, validar formato y tamaño
+  if (image.startsWith("data:image/")) {
+    if (
+      !image.startsWith("data:image/png;base64,") &&
+      !image.startsWith("data:image/jpeg;base64,") &&
+      !image.startsWith("data:image/jpg;base64,")
+    ) {
+      return false;
+    }
+
+    // Calcular tamaño en bytes
+    const base64Str = image.split(",")[1] || "";
+    const sizeInBytes =
+      (base64Str.length * 3) / 4 -
+      (base64Str.endsWith("==") ? 2 : base64Str.endsWith("=") ? 1 : 0);
+    return sizeInBytes <= maxSizeMB * 1024 * 1024;
   }
 
-  // Calcular tamaño en bytes
-  const base64Str = base64.split(",")[1] || "";
-  const sizeInBytes =
-    (base64Str.length * 3) / 4 -
-    (base64Str.endsWith("==") ? 2 : base64Str.endsWith("=") ? 1 : 0);
-  return sizeInBytes <= maxSizeMB * 1024 * 1024;
+  // Si es URL, validar que sea una URL válida
+  if (image.startsWith("http://") || image.startsWith("https://")) {
+    try {
+      new URL(image);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
 }
 
 // Función para validar múltiples imágenes
@@ -110,7 +137,7 @@ function validateImages(imagenes) {
   if (imagenes.length > 10) return false;
 
   for (const imagen of imagenes) {
-    if (!isValidBase64Image(imagen)) {
+    if (!isValidImage(imagen)) {
       return false;
     }
   }
@@ -147,16 +174,17 @@ router.post("/", verifyToken, async (req, res) => {
       if (!validateImages(imagenes)) {
         return res.status(400).json({
           message:
-            "Las imágenes deben ser PNG, JPG o JPEG y pesar menos de 2MB cada una. Máximo 10 imágenes.",
+            "Las imágenes deben ser URLs válidas o base64 PNG/JPG/JPEG y pesar menos de 2MB cada una. Máximo 10 imágenes.",
         });
       }
       imagenesValidas = imagenes;
     }
     // Si solo se proporciona una imagen, validarla
     else if (imagen) {
-      if (!isValidBase64Image(imagen)) {
+      if (!isValidImage(imagen)) {
         return res.status(400).json({
-          message: "La imagen debe ser PNG, JPG o JPEG y pesar menos de 2MB",
+          message:
+            "La imagen debe ser una URL válida o base64 PNG/JPG/JPEG y pesar menos de 2MB",
         });
       }
       imagenesValidas = [imagen];
@@ -251,14 +279,18 @@ router.put("/:id", verifyToken, async (req, res) => {
       if (!validateImages(imagenes)) {
         return res.status(400).json({
           message:
-            "Las imágenes deben ser PNG, JPG o JPEG y pesar menos de 2MB cada una. Máximo 10 imágenes.",
+            "Las imágenes deben ser URLs válidas o base64 PNG/JPG/JPEG y pesar menos de 2MB cada una. Máximo 10 imágenes.",
         });
       }
       imagenesValidas = imagenes;
-    } else if (imagen && imagen.startsWith("data:image/")) {
-      if (!isValidBase64Image(imagen)) {
+    } else if (
+      imagen &&
+      (imagen.startsWith("data:image/") || imagen.startsWith("http"))
+    ) {
+      if (!isValidImage(imagen)) {
         return res.status(400).json({
-          message: "La imagen debe ser PNG, JPG o JPEG y pesar menos de 2MB",
+          message:
+            "La imagen debe ser una URL válida o base64 PNG/JPG/JPEG y pesar menos de 2MB",
         });
       }
       imagenesValidas = [imagen];
