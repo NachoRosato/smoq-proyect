@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AdminLayout from '../../components/AdminLayout';
-import { backupApi } from '../../utils/api';
+import { backupApi, setTokenExpiredHandler } from '../../utils/api';
 import Toast from '../../components/Toast';
 import { Download, Trash2, RotateCcw, Database, HardDrive, Clock, FileText } from 'lucide-react';
 
@@ -26,7 +26,7 @@ interface BackupResponse {
 }
 
 const BackupPage: React.FC = () => {
-  const { auth } = useAuth();
+  const { auth, handleTokenExpired } = useAuth();
   const [backups, setBackups] = useState<Backup[]>([]);
   const [stats, setStats] = useState<BackupStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +37,11 @@ const BackupPage: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [backupMethod, setBackupMethod] = useState<string>('');
+
+  // Configurar el manejador de token expirado
+  useEffect(() => {
+    setTokenExpiredHandler(handleTokenExpired);
+  }, [handleTokenExpired]);
 
   const loadBackups = async () => {
     try {

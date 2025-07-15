@@ -5,18 +5,25 @@ import { LogOut, Package, Home, MessageCircle, Settings, ChevronLeft, Database }
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSidebar } from '../context/SidebarContext'
+import { setTokenExpiredHandler } from '../utils/api'
+import TokenExpiredModal from './TokenExpiredModal'
 
 interface AdminLayoutProps {
   children: React.ReactNode
 }
 
 function AdminLayoutInner({ children }: AdminLayoutProps) {
-  const { auth, logout, loading } = useAuth()
+  const { auth, logout, loading, handleTokenExpired, showTokenExpiredModal, setShowTokenExpiredModal } = useAuth()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [hasMounted, setHasMounted] = useState(false)
   const [isRotating, setIsRotating] = useState(false)
   const { sidebarOpen, setSidebarOpen } = useSidebar()
+
+  // Configurar el manejador de token expirado
+  useEffect(() => {
+    setTokenExpiredHandler(handleTokenExpired);
+  }, [handleTokenExpired]);
 
   useEffect(() => {
     if (!loading) {
@@ -42,6 +49,16 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
     setSidebarOpen(!sidebarOpen)
     setTimeout(() => setIsRotating(false), 400)
   }
+
+  const handleGoBack = () => {
+    setShowTokenExpiredModal(false);
+    router.push('/admin/dashboard');
+  };
+
+  const handleLogoutFromModal = () => {
+    logout();
+    router.push('/admin/login');
+  };
 
   if (loading || isLoading) {
     return (
@@ -207,6 +224,14 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
           {children}
         </main>
       </div>
+
+      {/* Modal de Token Expirado */}
+      <TokenExpiredModal
+        isOpen={showTokenExpiredModal}
+        onClose={() => setShowTokenExpiredModal(false)}
+        onLogout={handleLogoutFromModal}
+        onGoBack={handleGoBack}
+      />
     </div>
   )
 }

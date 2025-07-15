@@ -17,6 +17,9 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>
   logout: () => void
   loading: boolean
+  showTokenExpiredModal: boolean
+  setShowTokenExpiredModal: (show: boolean) => void
+  handleTokenExpired: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -28,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated: false
   })
   const [loading, setLoading] = useState(true)
+  const [showTokenExpiredModal, setShowTokenExpiredModal] = useState(false)
 
   // Cargar sesión desde localStorage al inicializar
   useEffect(() => {
@@ -88,10 +92,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     })
     localStorage.removeItem('admin_token')
     localStorage.removeItem('admin_user')
+    setShowTokenExpiredModal(false)
+  }
+
+  const handleTokenExpired = () => {
+    setShowTokenExpiredModal(true)
   }
 
   return (
-    <AuthContext.Provider value={{ auth, login, logout, loading }}>
+    <AuthContext.Provider value={{ 
+      auth, 
+      login, 
+      logout, 
+      loading, 
+      showTokenExpiredModal, 
+      setShowTokenExpiredModal,
+      handleTokenExpired
+    }}>
       {children}
     </AuthContext.Provider>
   )

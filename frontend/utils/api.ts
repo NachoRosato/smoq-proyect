@@ -9,6 +9,14 @@ interface ApiResponse<T> {
   error?: string
 }
 
+// Variable global para manejar la expiración del token
+let tokenExpiredHandler: (() => void) | null = null
+
+// Función para establecer el manejador de token expirado
+export const setTokenExpiredHandler = (handler: () => void) => {
+  tokenExpiredHandler = handler
+}
+
 // Función genérica para hacer peticiones a la API
 async function apiRequest<T>(
   endpoint: string,
@@ -27,6 +35,18 @@ async function apiRequest<T>(
     })
 
     const data = await response.json()
+
+    // Verificar si el token ha expirado
+    if (response.status === 401 && data.message === 'Token expirado') {
+      console.log('🔄 Token expirado detectado, ejecutando manejador...')
+      if (tokenExpiredHandler) {
+        tokenExpiredHandler()
+      }
+      return {
+        success: false,
+        error: 'Token expirado',
+      }
+    }
 
     if (!response.ok) {
       return {
