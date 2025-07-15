@@ -39,8 +39,13 @@ class DatabaseBackupAPI {
 
   // Hacer backup usando la API de MongoDB
   async createBackup() {
+    let shouldCloseConnection = false;
     try {
-      await this.connectToMongo();
+      // Solo conectar si no hay una conexión activa
+      if (mongoose.connection.readyState === 0) {
+        await this.connectToMongo();
+        shouldCloseConnection = true;
+      }
 
       const fileName = this.generateBackupFileName();
       const filePath = path.join(this.backupDir, fileName);
@@ -92,14 +97,22 @@ class DatabaseBackupAPI {
       console.error("❌ Error en createBackup:", error);
       throw error;
     } finally {
-      await mongoose.connection.close();
+      // Solo cerrar la conexión si la abrimos nosotros
+      if (shouldCloseConnection && mongoose.connection.readyState !== 0) {
+        await mongoose.connection.close();
+      }
     }
   }
 
   // Restaurar backup
   async restoreBackup(fileName) {
+    let shouldCloseConnection = false;
     try {
-      await this.connectToMongo();
+      // Solo conectar si no hay una conexión activa
+      if (mongoose.connection.readyState === 0) {
+        await this.connectToMongo();
+        shouldCloseConnection = true;
+      }
 
       const filePath = path.join(this.backupDir, fileName);
 
@@ -136,7 +149,10 @@ class DatabaseBackupAPI {
       console.error("❌ Error en restoreBackup:", error);
       throw error;
     } finally {
-      await mongoose.connection.close();
+      // Solo cerrar la conexión si la abrimos nosotros
+      if (shouldCloseConnection && mongoose.connection.readyState !== 0) {
+        await mongoose.connection.close();
+      }
     }
   }
 
