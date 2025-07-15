@@ -24,12 +24,77 @@ const initialState: CartState = {
   total: 0
 }
 
+// Función para guardar en localStorage con manejo de errores
+const saveToLocalStorage = (key: string, data: any) => {
+  try {
+    // Comprimir datos antes de guardar
+    const compressedData = JSON.stringify(data)
+    
+    // Verificar si los datos son demasiado grandes (más de 5MB)
+    if (compressedData.length > 5 * 1024 * 1024) {
+      console.warn('⚠️ Datos del carrito demasiado grandes, limpiando carrito...')
+      localStorage.removeItem(key)
+      return false
+    }
+    
+    localStorage.setItem(key, compressedData)
+    return true
+  } catch (error) {
+    console.error('❌ Error guardando en localStorage:', error)
+    
+    // Si es un error de cuota, limpiar localStorage y reintentar
+    if (error instanceof Error && error.name === 'QuotaExceededError') {
+      try {
+        console.warn('⚠️ localStorage lleno, limpiando datos antiguos...')
+        localStorage.clear()
+        localStorage.setItem(key, JSON.stringify(data))
+        return true
+      } catch (retryError) {
+        console.error('❌ Error en reintento:', retryError)
+        return false
+      }
+    }
+    
+    return false
+  }
+}
+
+// Función para cargar desde localStorage con manejo de errores
+const loadFromLocalStorage = (key: string) => {
+  try {
+    const data = localStorage.getItem(key)
+    return data ? JSON.parse(data) : null
+  } catch (error) {
+    console.error('❌ Error cargando desde localStorage:', error)
+    // Si hay error, limpiar el localStorage corrupto
+    try {
+      localStorage.removeItem(key)
+    } catch (clearError) {
+      console.error('❌ Error limpiando localStorage:', clearError)
+    }
+    return null
+  }
+}
+
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case 'ADD_ITEM': {
       const { producto, gustoId } = action.payload
+      
+      // Verificar límite de items (máximo 50 items diferentes)
+      if (state.items.length >= 50) {
+        console.warn('⚠️ Límite de items alcanzado (50)')
+        return state
+      }
+      
       const existingItem = state.items.find(item => item.producto._id === producto._id && item.gustoId === gustoId)
       if (existingItem) {
+        // Verificar límite de cantidad por item (máximo 99)
+        if (existingItem.cantidad >= 99) {
+          console.warn('⚠️ Límite de cantidad alcanzado para este producto')
+          return state
+        }
+        
         return {
           ...state,
           items: state.items.map(item =>
@@ -58,6 +123,13 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
     }
     case 'UPDATE_QUANTITY': {
       const { id, gustoId, cantidad } = action.payload
+      
+      // Verificar límite de cantidad (máximo 99)
+      if (cantidad > 99) {
+        console.warn('⚠️ Cantidad máxima permitida: 99')
+        return state
+      }
+      
       const item = state.items.find(item => item.producto._id === id && item.gustoId === gustoId)
       if (!item) return state
       const quantityDiff = cantidad - item.cantidad
@@ -95,11 +167,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Cargar carrito desde localStorage al inicializar
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart')
+    const savedCart = loadFromLocalStorage('cart')
     if (savedCart) {
       try {
-        const parsedCart = JSON.parse(savedCart)
-        dispatch({ type: 'LOAD_CART', payload: parsedCart })
+        dispatch({ type: 'LOAD_CART', payload: savedCart })
       } catch (error) {
         console.error('Error al cargar carrito:', error)
       }
@@ -108,7 +179,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Guardar carrito en localStorage cuando cambie
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(state))
+    if (state.items.length > 0) {
+      const success = saveToLocalStorage('cart', state)
+      if (!success) {
+        console.warn('⚠️ No se pudo guardar el carrito en localStorage')
+      }
+    } else {
+      // Si el carrito está vacío, limpiar localStorage
+      try {
+        localStorage.removeItem('cart')
+      } catch (error) {
+        console.error('Error limpiando localStorage:', error)
+      }
+    }
   }, [state])
 
   const addItem = (producto: Producto, gustoId?: string) => {

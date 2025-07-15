@@ -24,7 +24,7 @@ export default function Carrito() {
         <Head>
           <title>Carrito - SMOQ Tienda</title>
         </Head>
-        <div className="min-h-screen" style={{ backgroundColor: 'rgb(253 253 249)' }}>
+        <div className="min-h-screen" style={{ backgroundColor: 'rgb(224, 217, 190)' }}>
           <Navbar />
           <div className="container mx-auto px-4 py-16">
             <div className="text-center">

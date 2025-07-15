@@ -61,7 +61,7 @@ const enviarEmailConfirmacionCliente = async (pedido, productos) => {
       <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
         
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 30px; text-align: center;">
+        <div style="background-color: rgb(224, 217, 190); padding: 30px; text-align: center;">
           <h1 style="color: #92400e; margin: 0; font-size: 28px; font-weight: bold;">
             🎉 ¡Realizaste tu pedido!
           </h1>
@@ -149,12 +149,12 @@ const enviarEmailConfirmacionCliente = async (pedido, productos) => {
           </div>
 
           <!-- Información adicional -->
-          <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; padding: 20px; border: 1px solid #f59e0b;">
+          <div style="background-color: rgb(224, 217, 190); border-radius: 12px; padding: 20px; border: 1px solid #f59e0b;">
             <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 16px;">
               📞 Próximos pasos
             </h4>
             <p style="color: #92400e; margin: 0; font-size: 14px; line-height: 1.5;">
-              Te contactaremos por email o teléfono para coordinar la entrega de tu pedido. 
+              Te contactaremos por email o WhatsApp para coordinar la entrega de tu pedido. 
               ¡Mantente atento a tu bandeja de entrada!
             </p>
           </div>
@@ -164,7 +164,7 @@ const enviarEmailConfirmacionCliente = async (pedido, productos) => {
         <!-- Footer -->
         <div style="background-color: #374151; color: #9ca3af; text-align: center; padding: 20px; font-size: 12px;">
           <p style="margin: 0;">
-            © 2024 SMOQ Tienda. Todos los derechos reservados.
+            © 2025 SMOQ Tienda. Todos los derechos reservados.
           </p>
           <p style="margin: 5px 0 0 0;">
             Gracias por tu confianza

@@ -162,30 +162,34 @@ export default function Home() {
         {/* Hero Section */}
         <section className="relative overflow-hidden" style={{background: 'linear-gradient(to right, rgb(0 0 0) 0%, rgb(0 0 0) 50%, rgb(147 133 90) 100%)'}}>
           <div className="absolute inset-0" style={{background: 'rgba(0,0,0,0.08)'}}></div>
-          <div className="relative container mx-auto px-4 py-16 lg:py-24">
+          <div className="relative container mx-auto px-4 py-16" style={{ paddingTop: '5rem', paddingBottom: '4rem' }}>
             <div className="text-center max-w-4xl mx-auto">
-              <div className="flex items-center justify-center mb-6 gap-4">
-                {/*
-                <Image
+              <div className="flex items-center justify-center mb-6 relative">
+                {/* Logo con sombreado sutil */}
+                <img
                   src="/images/logo_empresa_2.png"
-                  alt="Logo empresa 2"
-                  width={140}
-                  height={140}
-                  className="h-[100px] w-auto"
-                  priority
+                  alt="SMOQ Logo"
+                  className="h-auto w-auto lg:h-auto lg:w-auto object-contain rounded-full bg-transparent transform scale-200 lg:scale-200 transition-all duration-500 ease-in-out hover:scale-225 hover:translate-x-36 animate-logo-entrance"
                 />
-                */}
-                <h1 className="text-5xl lg:text-7xl font-bold text-white leading-none">
-                  SMOQ
-                </h1>
+                {/* Texto que aparece después de la animación */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center animate-text-appear" style={{ top: '80%' }}>
+                  <h2 className="text-2xl lg:text-4xl font-bold text-white mb-2 drop-shadow-lg">
+                    Bienvenidos a
+                  </h2>
+                  <p className="text-lg lg:text-xl text-white/90 font-medium drop-shadow-lg">
+                    Tu tienda de confianza
+                  </p>
+                </div>
               </div>
+              {/* Descripción comentada
               <p className="text-xl lg:text-2xl text-white mb-8 leading-relaxed">
                 Descubre productos únicos que cuentan historias. 
                 <br />
                 <span className="font-semibold">Calidad, estilo y atención personalizada.</span>
               </p>
+              */}
               
-              {/* Stats */}
+              {/* Stats - Comentadas
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
                 <div
                   className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-6 border-2 border-white border-opacity-30 transition-all duration-300 hover:scale-105 hover:border-opacity-100 cursor-pointer hover-brown-shadow"
@@ -209,6 +213,7 @@ export default function Home() {
                   <div className="text-base font-semibold text-white">Envío Rápido</div>
                 </div>
               </div>
+              */}
             </div>
           </div>
           

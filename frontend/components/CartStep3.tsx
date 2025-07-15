@@ -22,7 +22,6 @@ export default function CartStep3({ onBack, formData }: CartStep3Props) {
   const { state, clearCart } = useCart()
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [pedidoEnviado, setPedidoEnviado] = useState(false)
   const [whatsappNumber, setWhatsappNumber] = useState('')
   const [whatsappTitle, setWhatsappTitle] = useState('')
   const [whatsappDescription, setWhatsappDescription] = useState('')
@@ -69,14 +68,11 @@ export default function CartStep3({ onBack, formData }: CartStep3Props) {
       const response = await pedidosApi.create(pedidoData)
 
       if (response.success) {
-        setPedidoEnviado(true)
         clearCart()
         toast.success('¡Pedido enviado correctamente!')
         
-        // Redirigir a la página de confirmación después de un breve delay
-        setTimeout(() => {
-          router.push('/confirmacion-pedido')
-        }, 1500)
+        // Redirigir inmediatamente a la página de confirmación
+        router.push('/confirmacion-pedido')
       } else {
         toast.error(response.error || 'Error al enviar el pedido')
       }
@@ -124,44 +120,15 @@ ${whatsappGoodbye || 'Enviado desde la tienda online'}`
     const numeroLimpio = whatsappNumber.replace(/\D/g, '')
     const urlWhatsApp = `https://wa.me/${numeroLimpio}?text=${mensajeCodificado}`
     
-    // Abrir WhatsApp en nueva ventana y redirigir a confirmación
+    // Abrir WhatsApp en nueva ventana y redirigir inmediatamente
     window.open(urlWhatsApp, '_blank')
     
-    // Limpiar carrito y redirigir a confirmación
+    // Limpiar carrito y redirigir inmediatamente
     clearCart()
     toast.success('¡Pedido enviado por WhatsApp!')
     
-    setTimeout(() => {
-      router.push('/confirmacion-pedido')
-    }, 1000)
-  }
-
-  if (pedidoEnviado) {
-    return (
-      <div className="bg-white rounded-2xl shadow-xl p-8 text-center border border-amber-100 max-w-md mx-auto">
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
-          <CheckCircle className="w-10 h-10 text-green-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          ¡Pedido Enviado Exitosamente!
-        </h2>
-        <p className="text-gray-600 mb-6 leading-relaxed">
-          Redirigiendo a la página de confirmación...
-        </p>
-        <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl p-4 mb-6">
-          <p className="text-green-800 text-sm leading-relaxed">
-            <strong>Próximos pasos:</strong> Te contactaremos por 
-            {formData.email ? ' email' : ''}
-            {formData.email && formData.telefono ? ' o ' : ''}
-            {formData.telefono ? ' teléfono' : ''} 
-            para coordinar la entrega de tu pedido.
-          </p>
-        </div>
-        <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
-        </div>
-      </div>
-    )
+    // Redirigir inmediatamente sin delay
+    router.push('/confirmacion-pedido')
   }
 
   return (

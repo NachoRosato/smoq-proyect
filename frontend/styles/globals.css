@@ -142,3 +142,60 @@
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+/* Animación de flotación para el logo */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Animación de entrada del logo */
+@keyframes logo-entrance {
+  0% {
+    transform: scale(2) translateX(144px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2) translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-logo-entrance {
+  animation: logo-entrance 2s ease-out forwards;
+}
+
+/* Animación para el texto que aparece después del logo */
+@keyframes text-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-text-appear {
+  animation: text-appear 1s ease-out 2s forwards;
+  opacity: 0;
+}
+
+/* Reducir espaciado entre toasters */
+#_rht_toaster {
+  gap: 4px !important;
+}
+
+#_rht_toaster > div {
+  margin-bottom: 4px !important;
+}

@@ -22,7 +22,7 @@ export default function Toast({ type, message, onClose }: ToastProps) {
   }
 
   return (
-    <div className={`fixed top-4 right-4 z-50 max-w-sm w-full ${colors[type]} border rounded-lg shadow-lg p-4 animate-slide-in`}>
+    <div className={`fixed top-24 right-4 z-50 max-w-sm w-full ${colors[type]} border rounded-lg shadow-lg p-4 animate-slide-in`}>
       <div className="flex items-start">
         <div className="flex-shrink-0">
           {icons[type]}

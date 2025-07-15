@@ -7,7 +7,7 @@ import FloatingWhatsAppButton from '../components/FloatingWhatsAppButton'
 
 export default function ConfirmacionPedido() {
   const router = useRouter()
-  const [countdown, setCountdown] = useState(5)
+  const [countdown, setCountdown] = useState(15)
   const [isRedirecting, setIsRedirecting] = useState(false)
 
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function ConfirmacionPedido() {
                   </span>
                 </div>
                 <p className="text-amber-700 text-sm leading-relaxed">
-                  Te contactaremos por email o teléfono para coordinar la entrega de tu pedido. 
+                  Te contactaremos por email o whatsapp para coordinar la entrega de tu pedido. 
                   ¡Mantente atento a tu bandeja de entrada!
                 </p>
               </div>
@@ -99,7 +99,7 @@ export default function ConfirmacionPedido() {
                 <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
                   <div 
                     className="bg-gradient-to-r from-amber-500 to-amber-600 h-2 rounded-full transition-all duration-1000 ease-linear"
-                    style={{ width: `${((5 - countdown) / 5) * 100}%` }}
+                    style={{ width: `${((15 - countdown) / 15) * 100}%` }}
                   ></div>
                 </div>
 

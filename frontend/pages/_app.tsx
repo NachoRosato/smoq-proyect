@@ -52,6 +52,7 @@ export default function App({ Component, pageProps }: AppProps) {
               style: {
                 background: '#363636',
                 color: '#fff',
+                marginTop: '70px', // Reducido de 80px a 70px
               },
             }}
           />
