@@ -32,7 +32,10 @@ const enviarEmailConfirmacionCliente = async (pedido, productos) => {
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; color: #374151;">${
         p.nombre
-      }${p.gustoNombre ? ` (${p.gustoNombre})` : ""}</td>
+      }</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #374151;">${
+        p.gustoNombre || "-"
+      }</td>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #374151;">${
         p.cantidad
       }</td>
@@ -111,6 +114,7 @@ const enviarEmailConfirmacionCliente = async (pedido, productos) => {
               <thead>
                 <tr style="background: linear-gradient(135deg, #92400e, #b45309); color: white;">
                   <th style="padding: 15px; text-align: left; font-weight: 600;">Producto</th>
+                  <th style="padding: 15px; text-align: center; font-weight: 600;">Sabor</th>
                   <th style="padding: 15px; text-align: center; font-weight: 600;">Cantidad</th>
                   <th style="padding: 15px; text-align: right; font-weight: 600;">Precio Unit.</th>
                   <th style="padding: 15px; text-align: right; font-weight: 600;">Subtotal</th>
@@ -121,7 +125,7 @@ const enviarEmailConfirmacionCliente = async (pedido, productos) => {
               </tbody>
               <tfoot>
                 <tr style="background-color: #f3f4f6;">
-                  <td colspan="3" style="padding: 15px; text-align: right; font-weight: bold; color: #374151;">Total:</td>
+                  <td colspan="4" style="padding: 15px; text-align: right; font-weight: bold; color: #374151;">Total:</td>
                   <td style="padding: 15px; text-align: right; font-weight: bold; color: #92400e; font-size: 18px;">$${total.toLocaleString(
                     "es-AR"
                   )}</td>
@@ -256,8 +260,11 @@ router.post("/", async (req, res) => {
       .map(
         (p) => `
       <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${p.nombre}${
-          p.gustoNombre ? ` (${p.gustoNombre})` : ""
+        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${
+          p.nombre
+        }</td>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${
+          p.gustoNombre || "-"
         }</td>
         <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${
           p.cantidad
@@ -296,6 +303,7 @@ router.post("/", async (req, res) => {
             <thead>
               <tr style="background-color: #007bff; color: white;">
                 <th style="padding: 12px; text-align: left;">Producto</th>
+                <th style="padding: 12px; text-align: center;">Sabor</th>
                 <th style="padding: 12px; text-align: center;">Cantidad</th>
                 <th style="padding: 12px; text-align: right;">Precio Unit.</th>
                 <th style="padding: 12px; text-align: right;">Subtotal</th>
@@ -306,7 +314,7 @@ router.post("/", async (req, res) => {
             </tbody>
             <tfoot>
               <tr style="background-color: #e9ecef; font-weight: bold;">
-                <td colspan="3" style="padding: 12px; text-align: right;">Total:</td>
+                <td colspan="4" style="padding: 12px; text-align: right;">Total:</td>
                 <td style="padding: 12px; text-align: right;">$${total.toLocaleString(
                   "es-AR"
                 )}</td>
