@@ -43,6 +43,14 @@ const pedidoSchema = new mongoose.Schema(
           type: Number,
           required: true,
         },
+        gustoId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Gusto",
+        },
+        gustoNombre: {
+          type: String,
+          trim: true,
+        },
       },
     ],
     total: {

@@ -32,7 +32,7 @@ const enviarEmailConfirmacionCliente = async (pedido, productos) => {
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; color: #374151;">${
         p.nombre
-      }</td>
+      }${p.gustoNombre ? ` (${p.gustoNombre})` : ""}</td>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #374151;">${
         p.cantidad
       }</td>
@@ -187,7 +187,6 @@ const enviarEmailConfirmacionCliente = async (pedido, productos) => {
   // Enviar email al cliente
   try {
     await transporter.sendMail(mailOptionsCliente);
-    console.log("✅ Email de confirmación enviado al cliente:", pedido.email);
   } catch (emailError) {
     console.error(
       "❌ Error enviando email de confirmación al cliente:",
@@ -233,6 +232,8 @@ router.post("/", async (req, res) => {
       precio: p.precio,
       cantidad: p.cantidad,
       subtotal: p.precio * p.cantidad,
+      gustoId: p.gustoId || null,
+      gustoNombre: p.gustoNombre || null,
     }));
 
     // Calcular total
@@ -255,8 +256,8 @@ router.post("/", async (req, res) => {
       .map(
         (p) => `
       <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${
-          p.nombre
+        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${p.nombre}${
+          p.gustoNombre ? ` (${p.gustoNombre})` : ""
         }</td>
         <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${
           p.cantidad
@@ -331,7 +332,7 @@ router.post("/", async (req, res) => {
     // Configurar opciones del email al admin
     const mailOptions = {
       from: process.env.SMTP_USER,
-      to: process.env.SMTP_USER, // Email destino (puede ser configurado)
+      to: process.env.SMTP_USER, // pedidos@smoq.com.ar a pedidos@smoq.com.ar
       subject: `🛒 Nuevo Pedido de ${nombre} - SMOQ Tienda`,
       html: htmlEmail,
       replyTo: email || undefined,
@@ -340,7 +341,6 @@ router.post("/", async (req, res) => {
     // Enviar email al admin
     try {
       await transporter.sendMail(mailOptions);
-      console.log("✅ Email enviado al admin");
     } catch (emailError) {
       console.error("❌ Error enviando email al admin:", emailError);
       // No fallar el pedido si el email falla
