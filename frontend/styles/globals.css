@@ -191,6 +191,104 @@
   opacity: 0;
 }
 
+/* Animaciones para el modal de verificación de edad */
+@keyframes modal-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-fade-out {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+}
+
+.animate-modal-fade-in {
+  animation: modal-fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-modal-fade-out {
+  animation: modal-fade-out 0.3s cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Efecto de pulso para elementos decorativos */
+@keyframes gentle-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+.animate-gentle-pulse {
+  animation: gentle-pulse 3s ease-in-out infinite;
+}
+
+/* Efecto de respiración sutil */
+@keyframes gentle-breath {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.2;
+  }
+}
+
+.animate-gentle-breath {
+  animation: gentle-breath 4s ease-in-out infinite;
+}
+
+/* Animación del borde gradiente */
+@keyframes gradientBorder {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-border {
+  animation: gradientBorder 3s ease infinite;
+}
+
+/* Animación de fade suave en su lugar */
+@keyframes fade-out-smooth {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.animate-fade-out-smooth {
+  animation: fade-out-smooth 0.8s ease-out forwards;
+}
+
 /* Reducir espaciado entre toasters */
 #_rht_toaster {
   gap: 4px !important;
@@ -198,4 +296,43 @@
 
 #_rht_toaster > div {
   margin-bottom: 4px !important;
+}
+
+/* Estilos para el botón responsive */
+.hero-button-container {
+  top: 80%;
+}
+
+@media (max-width: 640px) {
+  .hero-button-container {
+    top: 100% !important;
+  }
+}
+
+/* Estilos personalizados para scrollbars */
+@layer utilities {
+  /* Scrollbar para Webkit (Chrome, Safari, Edge) */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: rgb(243 244 246);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgb(156 163 175);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgb(107 114 128);
+  }
+
+  /* Scrollbar para Firefox */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(156 163 175) rgb(243 244 246);
+  }
 }

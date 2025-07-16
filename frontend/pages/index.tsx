@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { ShoppingCart, Search, Filter, Star, TrendingUp, Zap, Package } from 'lucide-react'
 import { useCart } from '../context/CartContext'
-import { productosApi, categoriasApi } from '../utils/api'
+import { productosApi, categoriasApi, configApi } from '../utils/api'
 import ProductCard from '../components/ProductCard'
 import Navbar from '../components/Navbar'
 import toast from 'react-hot-toast'
-import { Listbox } from '@headlessui/react'
-import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/24/outline'
 import FloatingWhatsAppButton from '../components/FloatingWhatsAppButton'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
@@ -34,6 +32,8 @@ export default function Home() {
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [showContactModal, setShowContactModal] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom')
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [dropdownAlignment, setDropdownAlignment] = useState<'center' | 'left' | 'right'>('center')
   const [contactForm, setContactForm] = useState({
     nombre: '',
     email: '',
@@ -42,6 +42,7 @@ export default function Home() {
   })
   const router = useRouter();
   const [categorias, setCategorias] = useState<{ _id: string; nombre: string }[]>([])
+  const [whatsappNumber, setWhatsappNumber] = useState('')
 
   useEffect(() => {
     loadProductos()
@@ -50,6 +51,13 @@ export default function Home() {
         setCategorias(res.data)
       } else {
         setCategorias([])
+      }
+    })
+    
+    // Obtener configuración de WhatsApp
+    configApi.get().then(res => {
+      if (res.success && res.config?.whatsappNumber) {
+        setWhatsappNumber(res.config.whatsappNumber)
       }
     })
   }, [])
@@ -64,6 +72,32 @@ export default function Home() {
       window.removeEventListener('resize', calculateDropdownPosition)
     }
   }, [])
+
+  // Cerrar dropdown al hacer clic fuera o scroll
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (!target.closest('.dropdown-container')) {
+        setIsDropdownOpen(false)
+      }
+    }
+
+    const handleScroll = () => {
+      setIsDropdownOpen(false)
+    }
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      window.addEventListener('scroll', handleScroll, { passive: true })
+      window.addEventListener('resize', handleScroll, { passive: true })
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleScroll)
+    }
+  }, [isDropdownOpen])
 
   useEffect(() => {
     if (router.query.scroll === 'productos') {
@@ -122,6 +156,7 @@ export default function Home() {
 
   const calculateDropdownPosition = () => {
     const viewportHeight = window.innerHeight
+    const viewportWidth = window.innerWidth
     const searchSection = document.querySelector('[data-search-section]')
     
     if (searchSection) {
@@ -134,6 +169,20 @@ export default function Home() {
         setDropdownPosition('top')
       } else {
         setDropdownPosition('bottom')
+      }
+
+      // Calcular alineación horizontal
+      const dropdownWidth = 300 // ancho máximo del dropdown
+      const centerX = rect.left + rect.width / 2
+      const leftSpace = centerX - dropdownWidth / 2
+      const rightSpace = viewportWidth - (centerX + dropdownWidth / 2)
+
+      if (leftSpace < 20) {
+        setDropdownAlignment('left')
+      } else if (rightSpace < 20) {
+        setDropdownAlignment('right')
+      } else {
+        setDropdownAlignment('center')
       }
     }
   }
@@ -172,48 +221,34 @@ export default function Home() {
                   className="h-auto w-auto lg:h-auto lg:w-auto object-contain rounded-full bg-transparent transform scale-200 lg:scale-200 transition-all duration-500 ease-in-out hover:scale-225 hover:translate-x-36 animate-logo-entrance"
                 />
                 {/* Texto que aparece después de la animación */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center animate-text-appear" style={{ top: '80%' }}>
-                  <h2 className="text-2xl lg:text-4xl font-bold text-white mb-2 drop-shadow-lg">
-                    Bienvenidos a
+                <div className="absolute inset-0 flex flex-col items-center justify-center animate-text-appear hero-button-container">
+                  <h2 className="text-2xl lg:text-4xl font-bold text-white mb-6 drop-shadow-lg">
+                    Bienvenidos!
                   </h2>
-                  <p className="text-lg lg:text-xl text-white/90 font-medium drop-shadow-lg">
-                    Tu tienda de confianza
-                  </p>
+                  <button 
+                    onClick={() => {
+                      document.getElementById('productos')?.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                      })
+                    }}
+                    className="group relative overflow-hidden rounded-xl py-3 px-8 font-semibold text-white transition-all duration-300 transform hover:scale-105 active:scale-95 animate-text-appear text-lg min-w-[200px]"
+                    style={{ 
+                      display: 'flex',
+                      alignItems: 'center',
+                      animationDelay: '3s',
+                      background: 'linear-gradient(135deg, rgba(255, 219, 126, 0.2) 0%, rgba(255, 193, 7, 0.1) 100%)',
+                      border: '2px solid rgba(255, 219, 126, 0.4)',
+                      boxShadow: '0 8px 25px rgba(255, 219, 126, 0.2)'
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="relative text-center">
+                      Descubrí productos únicos
+                    </div>
+                  </button>
                 </div>
               </div>
-              {/* Descripción comentada
-              <p className="text-xl lg:text-2xl text-white mb-8 leading-relaxed">
-                Descubre productos únicos que cuentan historias. 
-                <br />
-                <span className="font-semibold">Calidad, estilo y atención personalizada.</span>
-              </p>
-              */}
-              
-              {/* Stats - Comentadas
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-                <div
-                  className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-6 border-2 border-white border-opacity-30 transition-all duration-300 hover:scale-105 hover:border-opacity-100 cursor-pointer hover-brown-shadow"
-                >
-                  <TrendingUp className="w-10 h-10 mx-auto mb-3" style={{ color: 'rgb(147, 133, 90)' }} />
-                  <div className="text-3xl font-extrabold text-white drop-shadow-lg">+10.000</div>
-                  <div className="text-base font-semibold text-white">Productos Vendidos</div>
-                </div>
-                <div
-                  className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-6 border-2 border-white border-opacity-30 transition-all duration-300 hover:scale-105 hover:border-opacity-100 cursor-pointer hover-brown-shadow"
-                >
-                  <Star className="w-10 h-10 mx-auto mb-3" style={{ color: 'rgb(147, 133, 90)' }} />
-                  <div className="text-3xl font-extrabold text-white drop-shadow-lg">4.9/5</div>
-                  <div className="text-base font-semibold text-white">Satisfacción</div>
-                </div>
-                <div
-                  className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-6 border-2 border-white border-opacity-30 transition-all duration-300 hover:scale-105 hover:border-opacity-100 cursor-pointer hover-brown-shadow"
-                >
-                  <Zap className="w-10 h-10 mx-auto mb-3" style={{ color: 'rgb(147, 133, 90)' }} />
-                  <div className="text-3xl font-extrabold text-white drop-shadow-lg">24hs</div>
-                  <div className="text-base font-semibold text-white">Envío Rápido</div>
-                </div>
-              </div>
-              */}
             </div>
           </div>
           
@@ -257,71 +292,89 @@ export default function Home() {
                   {/* Divider visual elegante */}
                   <div className="h-10 w-px mx-3" style={{ background: 'linear-gradient(to bottom, transparent, rgba(255, 219, 126, 0.6), transparent)' }} />
                   {/* Select de categorías con ícono de filtro dentro */}
-                  <div className="relative w-48 flex-shrink-0">
-                    <Listbox value={selectedCategory} onChange={setSelectedCategory}>
-                      <Listbox.Button className="relative w-full cursor-pointer rounded-r-xl py-4 pl-12 pr-10 text-left text-base focus:outline-none focus:ring-0 border-none shadow-none transition-all duration-300 hover:bg-amber-50" style={{ color: 'rgb(124, 79, 0)' }}>
-                        <span className="flex items-center">
-                          <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
-                          {selectedCategory
-                            ? <span className="ml-6 font-medium">{categorias.find(c => c._id === selectedCategory)?.nombre}</span>
-                            : <span className="ml-6 font-medium">Todas las categorías</span>}
-                        </span>
-                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                          <ChevronUpDownIcon className="h-5 w-5 text-gray-600 transition-transform duration-300" aria-hidden="true" />
-                        </span>
-                      </Listbox.Button>
-                      <Listbox.Options className={`absolute z-10 bg-white shadow-2xl max-h-96 rounded-xl py-4 text-base ring-1 ring-amber-200 ring-opacity-50 focus:outline-none sm:text-sm border border-amber-100 ${
+                  <div className="relative w-auto min-w-32 sm:min-w-48 flex-shrink-0 dropdown-container">
+                    <button
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="relative w-full cursor-pointer rounded-r-xl py-4 pl-12 pr-10 text-left text-base focus:outline-none focus:ring-0 border-none shadow-none transition-all duration-300 hover:bg-amber-50 whitespace-nowrap"
+                      style={{ color: 'rgb(124, 79, 0)' }}
+                    >
+                      <span className="flex items-center">
+                        <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                        <span className="ml-6 font-medium text-sm sm:text-base">Categorías</span>
+                      </span>
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                        <svg 
+                          className={`h-5 w-5 text-gray-600 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </span>
+                    </button>
+                    
+                    {/* Dropdown Options */}
+                    {isDropdownOpen && (
+                      <div className={`absolute z-40 bg-white shadow-2xl max-h-96 rounded-xl py-4 text-base ring-1 ring-amber-200 ring-opacity-50 focus:outline-none sm:text-sm border border-amber-100 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 ${
                         dropdownPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
                       }`} style={{
-                        width: 'calc(100% + 2rem)',
-                        left: '-1rem',
-                        minWidth: '280px'
+                        width: 'max-content',
+                        minWidth: '100%',
+                        maxWidth: 'min(300px, calc(100vw - 2rem))',
+                        left: dropdownAlignment === 'center' ? 'calc(50% - 20px)' : dropdownAlignment === 'left' ? '0' : 'auto',
+                        right: dropdownAlignment === 'right' ? '0' : 'auto',
+                        transform: dropdownAlignment === 'center' ? 'translateX(-50%)' : 'none',
+                        maxHeight: 'min(300px, calc(100vh - 200px))',
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: 'rgb(156 163 175) rgb(243 244 246)',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
                       }}>
-                        <Listbox.Option
-                          key=""
-                          value=""
-                          className={({ active }) =>
-                            `cursor-pointer select-none relative py-5 pl-14 pr-6 transition-all duration-200 ${
-                              active ? 'bg-amber-50 text-amber-900' : 'text-gray-900'
-                            }`
-                          }
+                        {/* Opción "Todas las categorías" */}
+                        <button
+                          onClick={() => {
+                            setSelectedCategory('')
+                            setIsDropdownOpen(false)
+                          }}
+                          className={`w-full cursor-pointer select-none relative py-4 pl-14 pr-6 transition-all duration-200 text-left ${
+                            !selectedCategory ? 'bg-amber-50 text-amber-900' : 'text-gray-900 hover:bg-amber-50'
+                          }`}
                         >
-                          {({ selected }) => (
-                            <>
-                              <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
-                              <span className="ml-8 block truncate font-medium">Todas las categorías</span>
-                              {selected ? (
-                                <span className="absolute inset-y-0 right-5 flex items-center text-amber-600">
-                                  <CheckIcon className="h-5 w-5" aria-hidden="true" />
-                                </span>
-                              ) : null}
-                            </>
+                          <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                          <span className="ml-8 block font-medium text-sm sm:text-base">Todas las categorías</span>
+                          {!selectedCategory && (
+                            <span className="absolute inset-y-0 right-5 flex items-center text-amber-600">
+                              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </span>
                           )}
-                        </Listbox.Option>
+                        </button>
+                        
+                        {/* Opciones de categorías */}
                         {categorias.map((categoria) => (
-                          <Listbox.Option
+                          <button
                             key={categoria._id}
-                            value={categoria._id}
-                            className={({ active }) =>
-                              `cursor-pointer select-none relative py-5 pl-14 pr-6 transition-all duration-200 ${
-                                active ? 'bg-amber-50 text-amber-900' : 'text-gray-900'
-                              }`
-                            }
+                            onClick={() => {
+                              setSelectedCategory(categoria._id)
+                              setIsDropdownOpen(false)
+                            }}
+                            className={`w-full cursor-pointer select-none relative py-4 pl-14 pr-6 transition-all duration-200 text-left ${
+                              selectedCategory === categoria._id ? 'bg-amber-50 text-amber-900' : 'text-gray-900 hover:bg-amber-50'
+                            }`}
                           >
-                            {({ selected }) => (
-                              <>
-                                <span className="ml-8 block truncate font-medium">{categoria.nombre}</span>
-                                {selected ? (
-                                  <span className="absolute inset-y-0 right-5 flex items-center text-amber-600">
-                                    <CheckIcon className="h-5 w-5" aria-hidden="true" />
-                                  </span>
-                                ) : null}
-                              </>
+                            <span className="ml-8 block font-medium text-sm sm:text-base">{categoria.nombre}</span>
+                            {selectedCategory === categoria._id && (
+                              <span className="absolute inset-y-0 right-5 flex items-center text-amber-600">
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </span>
                             )}
-                          </Listbox.Option>
+                          </button>
                         ))}
-                      </Listbox.Options>
-                    </Listbox>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -427,7 +480,7 @@ export default function Home() {
                     </p>
                     
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto mb-12">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto mb-12">
                       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
                         <div className="text-3xl font-bold text-gray-700 mb-2">{productos.filter(p => p.activo).length}</div>
                         <div className="text-sm font-medium text-gray-600">Productos Activos</div>
@@ -488,8 +541,21 @@ export default function Home() {
               </div>
               <p className="text-gray-200 text-base max-w-xs mb-4">Productos únicos, atención personalizada y calidad garantizada. ¡Viví la experiencia SMOQ!</p>
               <div className="flex gap-4 mt-4">
-                <a href="https://wa.me/" target="_blank" rel="noopener" className="hover:text-[rgb(124,79,0)] transition-colors text-white"><svg width="24" height="24" fill="currentColor"><path d="M20.52 3.48A12.07 12.07 0 0 0 12 0C5.37 0 0 5.37 0 12c0 2.12.55 4.18 1.6 6.01L0 24l6.18-1.62A12.07 12.07 0 0 0 12 24c6.63 0 12-5.37 12-12 0-3.21-1.25-6.23-3.48-8.52zM12 22c-1.85 0-3.66-.5-5.23-1.44l-.37-.22-3.67.96.98-3.58-.24-.37A9.94 9.94 0 0 1 2 12c0-5.52 4.48-10 10-10s10 4.48 10 10-4.48 10-10 10zm5.2-7.6c-.29-.15-1.7-.84-1.96-.94-.26-.1-.45-.15-.64.15-.19.29-.74.94-.91 1.13-.17.19-.34.21-.63.07-.29-.15-1.22-.45-2.33-1.43-.86-.77-1.44-1.72-1.61-2.01-.17-.29-.02-.45.13-.6.13-.13.29-.34.43-.51.14-.17.19-.29.29-.48.1-.19.05-.36-.02-.51-.07-.15-.64-1.54-.88-2.11-.23-.56-.47-.48-.64-.49-.16-.01-.36-.01-.56-.01-.19 0-.5.07-.76.36-.26.29-1 1-.99 2.43.01 1.43 1.03 2.81 1.18 3 .15.19 2.03 3.1 4.93 4.23.69.3 1.23.48 1.65.61.69.22 1.32.19 1.81.12.55-.08 1.7-.7 1.94-1.37.24-.67.24-1.25.17-1.37-.07-.12-.26-.19-.55-.34z"/></svg></a>
-                <a href="mailto:info@smoq.com" className="hover:text-[rgb(124,79,0)] transition-colors text-white"><svg width="24" height="24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 2v.01L12 13 4 6.01V6h16zm0 12H4V8.99l8 6.99 8-6.99V18z"/></svg></a>
+                <a 
+                  href={whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent('Hola! Quiero hacer una consulta!')}` : '#'} 
+                  target="_blank" 
+                  rel="noopener" 
+                  className="hover:text-[rgb(124,79,0)] transition-colors text-white"
+                  onClick={e => {
+                    if (!whatsappNumber) {
+                      e.preventDefault()
+                      toast.error('Número de WhatsApp no configurado')
+                    }
+                  }}
+                >
+                  <svg width="24" height="24" fill="currentColor"><path d="M20.52 3.48A12.07 12.07 0 0 0 12 0C5.37 0 0 5.37 0 12c0 2.12.55 4.18 1.6 6.01L0 24l6.18-1.62A12.07 12.07 0 0 0 12 24c6.63 0 12-5.37 12-12 0-3.21-1.25-6.23-3.48-8.52zM12 22c-1.85 0-3.66-.5-5.23-1.44l-.37-.22-3.67.96.98-3.58-.24-.37A9.94 9.94 0 0 1 2 12c0-5.52 4.48-10 10-10s10 4.48 10 10-4.48 10-10 10zm5.2-7.6c-.29-.15-1.7-.84-1.96-.94-.26-.1-.45-.15-.64.15-.19.29-.74.94-.91 1.13-.17.19-.34.21-.63.07-.29-.15-1.22-.45-2.33-1.43-.86-.77-1.44-1.72-1.61-2.01-.17-.29-.02-.45.13-.6.13-.13.29-.34.43-.51.14-.17.19-.29.29-.48.1-.19.05-.36-.02-.51-.07-.15-.64-1.54-.88-2.11-.23-.56-.47-.48-.64-.49-.16-.01-.36-.01-.56-.01-.19 0-.5.07-.76.36-.26.29-1 1-.99 2.43.01 1.43 1.03 2.81 1.18 3 .15.19 2.03 3.1 4.93 4.23.69.3 1.23.48 1.65.61.69.22 1.32.19 1.81.12.55-.08 1.7-.7 1.94-1.37.24-.67.24-1.25.17-1.37-.07-.12-.26-.19-.55-.34z"/></svg>
+                </a>
+                <a href="mailto:info@smoq.com.ar" className="hover:text-[rgb(124,79,0)] transition-colors text-white"><svg width="24" height="24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 2v.01L12 13 4 6.01V6h16zm0 12H4V8.99l8 6.99 8-6.99V18z"/></svg></a>
                 <a href="#" className="hover:text-[rgb(124,79,0)] transition-colors text-white"><svg width="24" height="24" fill="currentColor"><path d="M22.46 6c-.77.35-1.6.58-2.47.69a4.3 4.3 0 0 0 1.88-2.37 8.59 8.59 0 0 1-2.72 1.04A4.28 4.28 0 0 0 16.11 4c-2.37 0-4.29 1.92-4.29 4.29 0 .34.04.67.11.99C7.69 9.13 4.07 7.2 1.64 4.16c-.37.64-.58 1.39-.58 2.19 0 1.51.77 2.84 1.94 3.62-.72-.02-1.39-.22-1.98-.55v.06c0 2.11 1.5 3.87 3.5 4.27-.36.1-.74.16-1.13.16-.28 0-.54-.03-.8-.08.54 1.68 2.11 2.9 3.97 2.93A8.6 8.6 0 0 1 2 19.54 12.13 12.13 0 0 0 8.29 21.5c7.55 0 11.68-6.26 11.68-11.68 0-.18-.01-.36-.02-.54A8.18 8.18 0 0 0 24 4.59a8.36 8.36 0 0 1-2.54.7z"/></svg></a>
               </div>
             </div>
@@ -507,13 +573,28 @@ export default function Home() {
             <div className="flex-1 min-w-[220px]">
               <h4 className="text-lg font-bold mb-4 text-[rgb(124,79,0)]">Contacto</h4>
               <ul className="space-y-2 text-gray-200">
-                <li><span className="font-semibold">Email:</span> info@smoq.com</li>
-                <li><span className="font-semibold">WhatsApp:</span> +54 9 11 1234-5678</li>
+                <li><span className="font-semibold">Email:</span> info@smoq.com.ar</li>
+                <li>
+                  <span className="font-semibold">WhatsApp:</span> 
+                  {whatsappNumber ? (
+                    <a 
+                      href={`https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent('Hola! Quiero hacer una consulta!')}`}
+                      target="_blank"
+                      rel="noopener"
+                      className="hover:text-[rgb(124,79,0)] transition-colors"
+                    >
+                      {whatsappNumber}
+                    </a>
+                  ) : (
+                    <span className="text-gray-400">No configurado</span>
+                  )}
+                </li>
                 <li><span className="font-semibold">Dirección:</span> Buenos Aires, Argentina</li>
               </ul>
             </div>
           </div>
           <div className="mt-12 text-center text-gray-400 text-sm">© {new Date().getFullYear()} SMOQ. Todos los derechos reservados.</div>
+          <div className="mt-1 text-center text-gray-500 text-xs">Developed by WBS</div>
         </footer>
 
         {/* Contact Modal Rediseñado coherente con el navbar */}

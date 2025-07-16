@@ -6,6 +6,7 @@ import { productosApi, gustosApi, categoriasApi } from '../../utils/api'
 import { formatPrice, getGustoId } from '../../lib/helpers'
 import AdminLayout from '../../components/AdminLayout'
 import ConfirmModal from '../../components/ConfirmModal'
+import ResetAgeVerification from '../../components/ResetAgeVerification'
 import toast from 'react-hot-toast'
 import OptimizedImage from '../../components/OptimizedImage'
 import { useSidebar } from '../../context/SidebarContext'
@@ -562,6 +563,19 @@ export default function AdminDashboard() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Age Verification Reset Section */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              🔒 Configuración de Verificación de Edad
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Utiliza este botón para resetear la verificación de edad y hacer que aparezca el modal de verificación nuevamente.
+            </p>
+            <ResetAgeVerification />
           </div>
         </div>
 
