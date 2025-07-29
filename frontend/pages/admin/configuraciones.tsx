@@ -9,6 +9,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://smoq-proyect-product
 export default function Configuraciones() {
   const { auth } = useAuth()
   const [minFreeShipping, setMinFreeShipping] = useState(25000)
+  const [freeShippingEnabled, setFreeShippingEnabled] = useState(true)
+  const [descuentoGeneralEnabled, setDescuentoGeneralEnabled] = useState(false)
+  const [descuentoGeneralPorcentaje, setDescuentoGeneralPorcentaje] = useState(0)
   const [loading, setLoading] = useState(false)
   const [categorias, setCategorias] = useState<any[]>([])
   const [catNombre, setCatNombre] = useState('')
@@ -30,13 +33,22 @@ export default function Configuraciones() {
     configApi.get().then(res => {
       if (res.success && res.config) {
         setMinFreeShipping(res.config.minFreeShipping)
+        setFreeShippingEnabled(res.config.freeShippingEnabled !== false) // Por defecto true
+        setDescuentoGeneralEnabled(res.config.descuentoGeneralEnabled || false)
+        setDescuentoGeneralPorcentaje(res.config.descuentoGeneralPorcentaje || 0)
       } else {
         console.warn('No se pudo obtener configuración, usando valor por defecto')
         setMinFreeShipping(25000)
+        setFreeShippingEnabled(true)
+        setDescuentoGeneralEnabled(false)
+        setDescuentoGeneralPorcentaje(0)
       }
     }).catch(error => {
       console.warn('Error obteniendo configuración:', error)
       setMinFreeShipping(25000)
+      setFreeShippingEnabled(true)
+      setDescuentoGeneralEnabled(false)
+      setDescuentoGeneralPorcentaje(0)
     })
   }, [])
 
@@ -72,13 +84,15 @@ export default function Configuraciones() {
     // Validaciones completas
     const errors = []
     
-    // Validar monto mínimo de envío gratis
-    if (!minFreeShipping || minFreeShipping <= 0) {
-      errors.push('El monto mínimo para envío gratis debe ser mayor a 0')
-    } else if (minFreeShipping < 1000) {
-      errors.push('El monto mínimo para envío gratis debe ser al menos $1,000')
-    } else if (minFreeShipping > 1000000) {
-      errors.push('El monto mínimo para envío gratis no puede ser mayor a $1,000,000')
+    // Validar monto mínimo de envío gratis solo si está habilitado
+    if (freeShippingEnabled) {
+      if (!minFreeShipping || minFreeShipping <= 0) {
+        errors.push('El monto mínimo para envío gratis debe ser mayor a 0')
+      } else if (minFreeShipping < 1000) {
+        errors.push('El monto mínimo para envío gratis debe ser al menos $1,000')
+      } else if (minFreeShipping > 1000000) {
+        errors.push('El monto mínimo para envío gratis no puede ser mayor a $1,000,000')
+      }
     }
     
     // Si hay errores, mostrar el primero y no guardar
@@ -89,13 +103,14 @@ export default function Configuraciones() {
     
     setLoading(true)
     try {
-      const res = await configApi.update(minFreeShipping, auth.token || '')
+      const res = await configApi.update(minFreeShipping, freeShippingEnabled, descuentoGeneralEnabled, descuentoGeneralPorcentaje, auth.token || '')
       if (res.success) {
         toast.success('Configuración guardada')
       } else {
-        toast.error('Error al guardar configuración')
+        toast.error(`Error al guardar configuración: ${res.error}`)
       }
-    } catch {
+    } catch (error) {
+      console.error('Error guardando configuración:', error)
       toast.error('Error al guardar configuración')
     } finally {
       setLoading(false)
@@ -298,28 +313,127 @@ export default function Configuraciones() {
         <form onSubmit={handleSave} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Monto mínimo para envío gratis
+              Habilitar envío gratis
             </label>
-            <div className="relative">
-              <input
-                type="number"
-                min={1000}
-                max={1000000}
-                value={minFreeShipping}
-                onChange={e => setMinFreeShipping(Number(e.target.value))}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-amber-500 bg-white ${
-                  minFreeShipping && (minFreeShipping <= 0 || minFreeShipping < 1000 || minFreeShipping > 1000000)
-                    ? 'border-red-300 focus:ring-red-500'
-                    : 'border-gray-300 focus:ring-amber-500'
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={() => setFreeShippingEnabled(!freeShippingEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
+                  freeShippingEnabled ? 'bg-amber-600' : 'bg-gray-200'
                 }`}
-              />
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out ${
+                    freeShippingEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <span className="ml-3 text-sm text-gray-700">
+                {freeShippingEnabled ? 'Habilitado' : 'Deshabilitado'}
+              </span>
             </div>
             <p className="mt-2 text-sm text-gray-500">
-              Monto mínimo que debe alcanzar el carrito para que el envío sea gratuito.
+              Activa o desactiva la funcionalidad de envío gratis en el carrito.
             </p>
-            {minFreeShipping && (minFreeShipping <= 0 || minFreeShipping < 1000 || minFreeShipping > 1000000) && (
-              <div className="mt-1 text-sm text-red-600">
-                ⚠️ El monto debe estar entre $1,000 y $1,000,000
+          </div>
+
+          {freeShippingEnabled && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Monto mínimo para envío gratis
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={1000}
+                  max={1000000}
+                  value={minFreeShipping}
+                  onChange={e => setMinFreeShipping(Number(e.target.value))}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-amber-500 bg-white ${
+                    minFreeShipping && (minFreeShipping <= 0 || minFreeShipping < 1000 || minFreeShipping > 1000000)
+                      ? 'border-red-300 focus:ring-red-500'
+                      : 'border-gray-300 focus:ring-amber-500'
+                  }`}
+                />
+              </div>
+              <p className="mt-2 text-sm text-gray-500">
+                Monto mínimo que debe alcanzar el carrito para que el envío sea gratuito.
+              </p>
+              {minFreeShipping && (minFreeShipping <= 0 || minFreeShipping < 1000 || minFreeShipping > 1000000) && (
+                <div className="mt-1 text-sm text-red-600">
+                  ⚠️ El monto debe estar entre $1,000 y $1,000,000
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Sección de Descuento General */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold mb-4">Descuento General de la Tienda</h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Habilitar descuento general
+              </label>
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setDescuentoGeneralEnabled(!descuentoGeneralEnabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
+                    descuentoGeneralEnabled ? 'bg-amber-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out ${
+                      descuentoGeneralEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <span className="ml-3 text-sm text-gray-700">
+                  {descuentoGeneralEnabled ? 'Habilitado' : 'Deshabilitado'}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-gray-500">
+                Activa o desactiva el descuento general que se aplicará a todos los productos que no tengan descuento individual.
+              </p>
+            </div>
+
+            {descuentoGeneralEnabled && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Porcentaje de descuento general
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.01"
+                    value={descuentoGeneralPorcentaje || ''}
+                    onChange={e => {
+                      const value = e.target.value
+                      setDescuentoGeneralPorcentaje(value === '' ? 0 : Number(value))
+                    }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-amber-500 bg-white ${
+                      descuentoGeneralPorcentaje > 0 && (descuentoGeneralPorcentaje < 0 || descuentoGeneralPorcentaje > 100)
+                        ? 'border-red-300 focus:ring-red-500'
+                        : 'border-gray-300 focus:ring-amber-500'
+                    }`}
+                    placeholder="0"
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500 text-sm">%</span>
+                  </div>
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Porcentaje de descuento que se aplicará a todos los productos sin descuento individual.
+                </p>
+                {descuentoGeneralPorcentaje > 0 && (descuentoGeneralPorcentaje < 0 || descuentoGeneralPorcentaje > 100) && (
+                  <div className="mt-1 text-sm text-red-600">
+                    ⚠️ El porcentaje debe estar entre 0 y 100
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -367,20 +481,30 @@ export default function Configuraciones() {
             {catEdit && <button type="button" className="w-full bg-gray-300 text-gray-500 py-3 rounded-lg font-semibold text-lg hover:bg-gray-400 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => { setCatEdit(null); setCatNombre(''); setCatDesc(''); }}>Cancelar</button>}
           </div>
         </form>
-        <ul className="divide-y">
+        <ul className="divide-y max-h-60 overflow-y-auto pr-2">
           {categorias.map(cat => (
-            <li key={cat._id} className="py-2 flex justify-between items-center">
+            <li key={cat._id} className="py-3 flex justify-between items-center">
               <div>
                 <span className="font-semibold">{cat.nombre}</span>
                 {cat.descripcion && <span className="ml-2 text-gray-500 text-sm">{cat.descripcion}</span>}
               </div>
               <div className="flex gap-2">
-                <button className="text-blue-600 hover:underline" onClick={() => handleCatEdit(cat)}>Editar</button>
-                <button className="text-red-600 hover:underline" onClick={() => handleCatDelete(cat._id, cat.nombre)}>Eliminar</button>
+                <button 
+                  className="px-3 py-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-all duration-200 text-sm font-medium" 
+                  onClick={() => handleCatEdit(cat)}
+                >
+                  Editar
+                </button>
+                <button 
+                  className="px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-all duration-200 text-sm font-medium" 
+                  onClick={() => handleCatDelete(cat._id, cat.nombre)}
+                >
+                  Eliminar
+                </button>
               </div>
             </li>
           ))}
-          {categorias.length === 0 && <li className="text-gray-500">No hay categorías</li>}
+          {categorias.length === 0 && <li className="text-gray-500 py-3">No hay categorías</li>}
         </ul>
       </div>
       {/* Gestión de gustos */}
@@ -417,20 +541,30 @@ export default function Configuraciones() {
             {gustoEdit && <button type="button" className="w-full bg-gray-300 text-gray-500 py-3 rounded-lg font-semibold text-lg hover:bg-gray-400 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => { setGustoEdit(null); setGustoNombre(''); setGustoDesc(''); }}>Cancelar</button>}
           </div>
         </form>
-        <ul className="divide-y">
+        <ul className="divide-y max-h-60 overflow-y-auto pr-2">
           {gustos.map(g => (
-            <li key={g._id} className="py-2 flex justify-between items-center">
+            <li key={g._id} className="py-3 flex justify-between items-center">
               <div>
                 <span className="font-semibold">{g.nombre}</span>
                 {g.descripcion && <span className="ml-2 text-gray-500 text-sm">{g.descripcion}</span>}
               </div>
               <div className="flex gap-2">
-                <button className="text-blue-600 hover:underline" onClick={() => handleGustoEdit(g)}>Editar</button>
-                <button className="text-red-600 hover:underline" onClick={() => handleGustoDelete(g._id, g.nombre)}>Eliminar</button>
+                <button 
+                  className="px-3 py-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-all duration-200 text-sm font-medium" 
+                  onClick={() => handleGustoEdit(g)}
+                >
+                  Editar
+                </button>
+                <button 
+                  className="px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-all duration-200 text-sm font-medium" 
+                  onClick={() => handleGustoDelete(g._id, g.nombre)}
+                >
+                  Eliminar
+                </button>
               </div>
             </li>
           ))}
-          {gustos.length === 0 && <li className="text-gray-500">No hay gustos</li>}
+          {gustos.length === 0 && <li className="text-gray-500 py-3">No hay gustos</li>}
         </ul>
       </div>
 

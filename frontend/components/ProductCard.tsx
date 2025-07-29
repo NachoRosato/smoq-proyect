@@ -2,19 +2,7 @@ import { ShoppingCart, Zap } from 'lucide-react'
 import { formatPrice, getStockForGusto } from '../lib/helpers'
 import ImageSlider from './ImageSlider'
 import { useState } from 'react'
-
-interface Producto {
-  _id: string
-  nombre: string
-  precio: number
-  descripcion: string
-  imagen: string
-  imagenes?: string[]
-  categoria: { _id: string; nombre: string }
-  stock: number
-  gustos?: { _id: string; nombre: string; descripcion?: string }[]
-  stockPorGusto?: { gusto: { _id: string; nombre: string; descripcion?: string }; stock: number }[]
-}
+import { Producto } from '../types/product'
 
 interface ProductCardProps {
   producto: Producto
@@ -23,11 +11,34 @@ interface ProductCardProps {
 
 export default function ProductCard({ producto, onAddToCart }: ProductCardProps) {
   const [selectedGusto, setSelectedGusto] = useState<string>('')
+  const [showGustosModal, setShowGustosModal] = useState(false)
   const [error, setError] = useState<string>('')
 
   const mainColor = 'rgb(124, 79, 0)';
   const mainColorDark = 'rgb(90, 57, 0)';
   const mainColorLight = 'rgba(124, 79, 0, 0.08)';
+
+  // Función para verificar si el producto es nuevo (menos de 15 días)
+  const isProductNew = () => {
+    const now = new Date()
+    const productDate = new Date(producto.updatedAt || producto.createdAt || now)
+    const daysDifference = (now.getTime() - productDate.getTime()) / (1000 * 3600 * 24)
+    return daysDifference <= 15
+  }
+
+  // Función para verificar si hay stock disponible
+  const isAvailable = () => {
+    if (producto.gustos && producto.gustos.length > 0) {
+      // Si tiene gustos, verificar stock por gusto
+      if (producto.stockPorGusto && producto.stockPorGusto.length > 0) {
+        return producto.stockPorGusto.some(sg => sg.stock > 0)
+      }
+      // Si no tiene stock por gusto, usar stock general
+      return producto.stock > 0
+    }
+    // Si no tiene gustos, usar stock general
+    return producto.stock > 0
+  }
 
   // Obtener las imágenes del producto (múltiples o una sola)
   const getProductImages = () => {
@@ -68,28 +79,6 @@ export default function ProductCard({ producto, onAddToCart }: ProductCardProps)
     setError('');
   };
 
-  // Determinar si el producto está disponible
-  const isAvailable = () => {
-    if (producto.gustos && producto.gustos.length > 0) {
-      // Si tiene gustos, verificar si hay stock en algún gusto
-      const hasAnyStock = producto.stockPorGusto && producto.stockPorGusto.some(sg => {
-        // Verificar que sg.gusto no sea null y tenga la estructura correcta
-        return sg.stock > 0;
-      });
-      if (!hasAnyStock) return false;
-      
-      // Si hay un gusto seleccionado, verificar su stock específico
-      if (selectedGusto) {
-        return getStockForGustoLocal(selectedGusto) > 0;
-      }
-      
-      // Si no hay gusto seleccionado pero hay stock disponible, mostrar como disponible
-      return true;
-    }
-    return producto.stock > 0;
-  };
-
-
 
   const productImages = getProductImages();
 
@@ -121,12 +110,14 @@ export default function ProductCard({ producto, onAddToCart }: ProductCardProps)
           </span>
         </div>
         {/* Badge de nuevo producto - movido a esquina inferior derecha */}
-        <div className="absolute bottom-3 right-3">
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold shadow-lg" style={{ background: mainColorDark, color: 'white' }}>
-            <Zap className="w-3 h-3 mr-1" style={{ color: 'white' }} />
-            Nuevo
-          </span>
-        </div>
+        {isProductNew() && (
+          <div className="absolute bottom-3 right-3">
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold shadow-lg" style={{ background: mainColorDark, color: 'white' }}>
+              <Zap className="w-3 h-3 mr-1" style={{ color: 'white' }} />
+              Nuevo
+            </span>
+          </div>
+        )}
       </div>
       
       {/* Contenido optimizado */}
@@ -136,8 +127,24 @@ export default function ProductCard({ producto, onAddToCart }: ProductCardProps)
           <h3 className="text-lg font-bold line-clamp-2 flex-1 mr-3 min-w-0 leading-tight">
             {producto.nombre}
           </h3>
-          <div className="text-2xl font-bold flex-shrink-0 ml-2" style={{ color: mainColor }}>
-            {formatPrice(producto.precio)}
+          <div className="text-right flex-shrink-0 ml-2">
+            {producto.tieneDescuento ? (
+              <div className="flex flex-col items-end">
+                <span className="line-through text-gray-400 text-sm">
+                  {formatPrice(producto.precioOriginal || producto.precio)}
+                </span>
+                <span className="text-2xl font-bold text-red-600">
+                  {formatPrice(producto.precioConDescuento || producto.precio)}
+                </span>
+                <span className="text-xs text-red-600 font-medium">
+                  -{producto.descuentoPorcentaje}% OFF
+                </span>
+              </div>
+            ) : (
+              <div className="text-2xl font-bold" style={{ color: mainColor }}>
+                {formatPrice(producto.precio)}
+              </div>
+            )}
           </div>
         </div>
         

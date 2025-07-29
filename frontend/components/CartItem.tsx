@@ -2,16 +2,11 @@ import { Trash2, Plus, Minus } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { formatPrice } from '../lib/helpers'
 import OptimizedImage from './OptimizedImage'
+import { Producto } from '../types/product'
 
 interface CartItemProps {
   item: {
-    producto: {
-      _id: string
-      nombre: string
-      precio: number
-      imagen: string
-      categoria: string
-    }
+    producto: Producto
     cantidad: number
     gustoId?: string
   }
@@ -27,6 +22,10 @@ export default function CartItem({ item }: CartItemProps) {
   const handleRemove = () => {
     removeItem(item.producto._id, item.gustoId)
   }
+
+  // Usar precio con descuento si está disponible
+  const precio = item.producto.precioConDescuento || item.producto.precio
+  const precioOriginal = item.producto.precioOriginal || item.producto.precio
 
   return (
     <div className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg bg-white">
@@ -47,11 +46,27 @@ export default function CartItem({ item }: CartItemProps) {
           {item.producto.nombre}
         </h3>
         <p className="text-sm text-gray-600">
-          {item.producto.categoria}
+          {item.producto.categoria?.nombre || 'Sin categoría'}
         </p>
-        <p className="text-lg font-bold text-primary-600">
-          {formatPrice(item.producto.precio)}
-        </p>
+        <div className="flex flex-col">
+          {item.producto.tieneDescuento ? (
+            <>
+              <span className="line-through text-gray-400 text-sm">
+                {formatPrice(precioOriginal)}
+              </span>
+              <span className="text-lg font-bold text-red-600">
+                {formatPrice(precio)}
+              </span>
+              <span className="text-xs text-red-600 font-medium">
+                -{item.producto.descuentoPorcentaje}% OFF
+              </span>
+            </>
+          ) : (
+            <p className="text-lg font-bold text-primary-600">
+              {formatPrice(precio)}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Controles de cantidad */}
@@ -79,7 +94,7 @@ export default function CartItem({ item }: CartItemProps) {
       {/* Subtotal */}
       <div className="text-right">
         <p className="font-semibold text-gray-900">
-          {formatPrice(item.producto.precio * item.cantidad)}
+          {formatPrice(precio * item.cantidad)}
         </p>
       </div>
 

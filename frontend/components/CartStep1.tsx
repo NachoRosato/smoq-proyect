@@ -16,8 +16,8 @@ export default function CartStep1({ onNext }: CartStep1Props) {
     updateQuantity(id, gustoId, newQuantity)
   }
 
-  const handleRemoveItem = async (id: string) => {
-    removeItem(id)
+  const handleRemoveItem = async (id: string, gustoId?: string) => {
+    removeItem(id, gustoId)
   }
 
   const totalItems = state.items.reduce((sum, item) => sum + item.cantidad, 0)
@@ -142,13 +142,27 @@ export default function CartStep1({ onNext }: CartStep1Props) {
 
                   {/* Precio y botón eliminar */}
                   <div className="flex flex-col items-center sm:items-end gap-2 w-full sm:w-auto">
-                    <span className="font-bold text-lg" style={{ color: 'rgb(124, 79, 0)' }}>
-                      {formatPrice(item.producto.precio * item.cantidad)}
-                    </span>
+                    {item.producto.tieneDescuento ? (
+                      <div className="text-center sm:text-right">
+                        <span className="line-through text-gray-400 text-sm">
+                          {formatPrice((item.producto.precioOriginal || item.producto.precio) * item.cantidad)}
+                        </span>
+                        <div className="font-bold text-lg text-red-600">
+                          {formatPrice((item.producto.precioConDescuento || item.producto.precio) * item.cantidad)}
+                        </div>
+                        <span className="text-xs text-red-600 font-medium">
+                          -{item.producto.descuentoPorcentaje}% OFF
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-lg" style={{ color: 'rgb(124, 79, 0)' }}>
+                        {formatPrice((item.producto.precioConDescuento || item.producto.precio) * item.cantidad)}
+                      </span>
+                    )}
                     <button
                       className="p-2 rounded-full transition-all duration-200 hover:scale-110 hover:bg-red-100 group"
                       style={{ color: 'rgb(124, 79, 0)' }}
-                      onClick={() => handleRemoveItem(item.producto._id)}
+                      onClick={() => handleRemoveItem(item.producto._id, item.gustoId)}
                     >
                       <Trash2 className="w-4 h-4 group-hover:text-red-600" />
                     </button>

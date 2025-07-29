@@ -49,7 +49,7 @@ export default function CartStep3({ onBack, formData }: CartStep3Props) {
       const productos = state.items.map(item => ({
         _id: item.producto._id,
         nombre: item.producto.nombre,
-        precio: item.producto.precio,
+        precio: item.producto.precioConDescuento || item.producto.precio,
         cantidad: item.cantidad,
         gustoId: item.gustoId,
         gustoNombre: item.gustoId && Array.isArray(item.producto.gustos)
@@ -96,7 +96,8 @@ export default function CartStep3({ onBack, formData }: CartStep3Props) {
       const gustoNombre = item.gustoId && Array.isArray(item.producto.gustos)
         ? (item.producto.gustos.find((g: any) => g._id === item.gustoId)?.nombre || 'Sin especificar')
         : undefined
-      return `• ${item.producto.nombre}${gustoNombre ? ` (Sabor: ${gustoNombre})` : ''} - ${item.cantidad} x ${formatPrice(item.producto.precio)}`
+      const precio = item.producto.precioConDescuento || item.producto.precio
+      return `• ${item.producto.nombre}${gustoNombre ? ` (Sabor: ${gustoNombre})` : ''} - ${item.cantidad} x ${formatPrice(precio)}`
     }).join('\n')
 
     const mensaje = `${whatsappTitle || 'Nuevo Pedido - SMOQ'}
@@ -195,13 +196,27 @@ ${whatsappGoodbye || 'Enviado desde la tienda online'}`
                         </p>
                       )}
                       <p className="text-sm text-gray-600">
-                        Cantidad: {item.cantidad} x {formatPrice(item.producto.precio)}
+                        Cantidad: {item.cantidad} x {formatPrice(item.producto.precioConDescuento || item.producto.precio)}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-lg" style={{ color: 'rgb(124, 79, 0)' }}>
-                        {formatPrice(item.producto.precio * item.cantidad)}
-                      </p>
+                      {item.producto.tieneDescuento ? (
+                        <div className="text-right">
+                          <span className="line-through text-gray-400 text-sm">
+                            {formatPrice((item.producto.precioOriginal || item.producto.precio) * item.cantidad)}
+                          </span>
+                          <div className="font-bold text-lg text-red-600">
+                            {formatPrice((item.producto.precioConDescuento || item.producto.precio) * item.cantidad)}
+                          </div>
+                          <span className="text-xs text-red-600 font-medium">
+                            -{item.producto.descuentoPorcentaje}% OFF
+                          </span>
+                        </div>
+                      ) : (
+                        <p className="font-bold text-lg" style={{ color: 'rgb(124, 79, 0)' }}>
+                          {formatPrice((item.producto.precioConDescuento || item.producto.precio) * item.cantidad)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

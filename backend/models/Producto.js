@@ -19,6 +19,12 @@ const productoSchema = new mongoose.Schema(
       required: [true, "El precio es requerido"],
       min: [0, "El precio no puede ser negativo"],
     },
+    descuentoPorcentaje: {
+      type: Number,
+      min: [0, "El descuento no puede ser negativo"],
+      max: [100, "El descuento no puede ser mayor al 100%"],
+      default: 0,
+    },
     imagen: {
       type: String,
       required: [true, "La imagen es requerida"],

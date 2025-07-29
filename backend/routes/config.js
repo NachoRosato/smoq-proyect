@@ -19,6 +19,9 @@ router.get("/", async (req, res) => {
     if (!config) {
       config = await Config.create({
         minFreeShipping: 25000,
+        freeShippingEnabled: true,
+        descuentoGeneralEnabled: false,
+        descuentoGeneralPorcentaje: 0,
         whatsappNumber: "",
         whatsappTitle: "Nuevo Pedido - SMOQ",
         whatsappDescription:
@@ -37,6 +40,9 @@ router.put("/", verifyToken, async (req, res) => {
   try {
     const {
       minFreeShipping,
+      freeShippingEnabled,
+      descuentoGeneralEnabled,
+      descuentoGeneralPorcentaje,
       whatsappNumber,
       whatsappTitle,
       whatsappDescription,
@@ -48,6 +54,13 @@ router.put("/", verifyToken, async (req, res) => {
     if (!config) {
       config = await Config.create({
         minFreeShipping: minFreeShipping || 25000,
+        freeShippingEnabled:
+          freeShippingEnabled !== undefined ? freeShippingEnabled : true,
+        descuentoGeneralEnabled:
+          descuentoGeneralEnabled !== undefined
+            ? descuentoGeneralEnabled
+            : false,
+        descuentoGeneralPorcentaje: descuentoGeneralPorcentaje || 0,
         whatsappNumber: whatsappNumber || "",
         whatsappTitle: whatsappTitle || "Nuevo Pedido - SMOQ",
         whatsappDescription:
@@ -58,6 +71,15 @@ router.put("/", verifyToken, async (req, res) => {
     } else {
       if (minFreeShipping !== undefined) {
         config.minFreeShipping = minFreeShipping;
+      }
+      if (freeShippingEnabled !== undefined) {
+        config.freeShippingEnabled = freeShippingEnabled;
+      }
+      if (descuentoGeneralEnabled !== undefined) {
+        config.descuentoGeneralEnabled = descuentoGeneralEnabled;
+      }
+      if (descuentoGeneralPorcentaje !== undefined) {
+        config.descuentoGeneralPorcentaje = descuentoGeneralPorcentaje;
       }
       if (whatsappNumber !== undefined) {
         config.whatsappNumber = whatsappNumber;

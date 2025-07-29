@@ -7,6 +7,20 @@ const configSchema = new mongoose.Schema(
       required: true,
       default: 25000,
     },
+    freeShippingEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    descuentoGeneralEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    descuentoGeneralPorcentaje: {
+      type: Number,
+      min: [0, "El descuento no puede ser negativo"],
+      max: [100, "El descuento no puede ser mayor al 100%"],
+      default: 0,
+    },
     whatsappNumber: {
       type: String,
       default: "",

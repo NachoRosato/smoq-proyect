@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+debugger;
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://smoq-proyect-production.up.railway.app'
 
 interface ApiResponse<T> {
@@ -79,6 +80,18 @@ export const productosApi = {
     
     const queryString = queryParams.toString();
     const endpoint = `/api/productos${queryString ? `?${queryString}` : ''}`;
+    
+    return apiRequest(endpoint);
+  },
+  getWithDiscounts: (params?: { page?: number; limit?: number; categoria?: string; search?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.categoria) queryParams.append('categoria', params.categoria);
+    if (params?.search) queryParams.append('search', params.search);
+    
+    const queryString = queryParams.toString();
+    const endpoint = `/api/productos/with-discounts${queryString ? `?${queryString}` : ''}`;
     
     return apiRequest(endpoint);
   },
@@ -172,6 +185,9 @@ export const configApi = {
         success: true,
         config: { 
           minFreeShipping: 25000, 
+          freeShippingEnabled: true,
+          descuentoGeneralEnabled: false,
+          descuentoGeneralPorcentaje: 0,
           whatsappNumber: "",
           whatsappTitle: "Nuevo Pedido - SMOQ",
           whatsappDescription: "Somos SMOQ y acabas de tomar la mejor decisión de tu vida. Gracias por elegirnos!",
@@ -192,9 +208,19 @@ export const configApi = {
       }
     }
   },
-  update: async (minFreeShipping: number, token: string) => {
+  update: async (minFreeShipping: number, freeShippingEnabled?: boolean, descuentoGeneralEnabled?: boolean, descuentoGeneralPorcentaje?: number, token: string) => {
     try {
-      const res = await axios.put(`${API_URL}/api/config`, { minFreeShipping }, {
+      const data: any = { minFreeShipping }
+      if (freeShippingEnabled !== undefined) {
+        data.freeShippingEnabled = freeShippingEnabled
+      }
+      if (descuentoGeneralEnabled !== undefined) {
+        data.descuentoGeneralEnabled = descuentoGeneralEnabled
+      }
+      if (descuentoGeneralPorcentaje !== undefined) {
+        data.descuentoGeneralPorcentaje = descuentoGeneralPorcentaje
+      }
+      const res = await axios.put(`${API_URL}/api/config`, data, {
         headers: { Authorization: `Bearer ${token}` }
       })
       return res.data
@@ -364,4 +390,13 @@ export const backupApi = {
       console.error('Error descargando backup:', error)
     })
   },
-} 
+}
+
+// Funciones específicas para contacto
+export const contactoApi = {
+  enviar: (datos: { nombre: string; email: string; telefono?: string; mensaje: string }) =>
+    apiRequest('/api/contacto', {
+      method: 'POST',
+      body: JSON.stringify(datos),
+    }),
+}

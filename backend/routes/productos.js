@@ -1,5 +1,6 @@
 const express = require("express");
 const Producto = require("../models/Producto");
+const Config = require("../models/Config");
 const verifyToken = require("../middleware/verifyToken");
 const router = express.Router();
 
@@ -31,6 +32,78 @@ router.get("/", async (req, res) => {
 
     res.json(productos);
   } catch (err) {
+    res.status(500).json({ error: "Error al obtener productos" });
+  }
+});
+
+// GET /productos/with-discounts - Obtener productos con descuentos aplicados (público)
+router.get("/with-discounts", async (req, res) => {
+  try {
+    const {
+      categoria,
+      search,
+      limit = 20,
+      page = 1,
+      showInactive = false,
+    } = req.query;
+    const query = {};
+
+    // Por defecto traer solo productos activos
+    if (!showInactive) {
+      query.activo = true;
+    }
+
+    if (categoria) query.categoria = categoria;
+    if (search) query.$text = { $search: search };
+
+    const productos = await Producto.find(query)
+      .populate("categoria")
+      .populate("gustos")
+      .populate("stockPorGusto.gusto")
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit));
+
+    // Obtener configuración para descuento general
+    const config = await Config.findOne();
+    const descuentoGeneralEnabled = config?.descuentoGeneralEnabled || false;
+    const descuentoGeneralPorcentaje = config?.descuentoGeneralPorcentaje || 0;
+
+    // Aplicar descuentos a los productos
+    const productosConDescuentos = productos.map((producto) => {
+      const productoObj = producto.toObject();
+
+      // Si el producto tiene descuento individual, usar ese
+      if (productoObj.descuentoPorcentaje > 0) {
+        productoObj.precioOriginal = productoObj.precio;
+        productoObj.precioConDescuento =
+          productoObj.precio * (1 - productoObj.descuentoPorcentaje / 100);
+        productoObj.tieneDescuento = true;
+        productoObj.tipoDescuento = "individual";
+      }
+      // Si no tiene descuento individual pero hay descuento general habilitado
+      else if (descuentoGeneralEnabled && descuentoGeneralPorcentaje > 0) {
+        productoObj.precioOriginal = productoObj.precio;
+        productoObj.precioConDescuento =
+          productoObj.precio * (1 - descuentoGeneralPorcentaje / 100);
+        productoObj.tieneDescuento = true;
+        productoObj.tipoDescuento = "general";
+        productoObj.descuentoPorcentaje = descuentoGeneralPorcentaje;
+      }
+      // Sin descuento
+      else {
+        productoObj.precioOriginal = productoObj.precio;
+        productoObj.precioConDescuento = productoObj.precio;
+        productoObj.tieneDescuento = false;
+        productoObj.tipoDescuento = null;
+      }
+
+      return productoObj;
+    });
+
+    res.json(productosConDescuentos);
+  } catch (err) {
+    console.error("Error obteniendo productos con descuentos:", err);
     res.status(500).json({ error: "Error al obtener productos" });
   }
 });
@@ -151,6 +224,7 @@ router.post("/", verifyToken, async (req, res) => {
       nombre,
       descripcion,
       precio,
+      descuentoPorcentaje,
       imagen,
       imagenes,
       categoria,
@@ -164,6 +238,15 @@ router.post("/", verifyToken, async (req, res) => {
       return res.status(400).json({
         message: "Todos los campos son requeridos",
       });
+    }
+
+    // Validar descuento
+    if (descuentoPorcentaje !== undefined) {
+      if (descuentoPorcentaje < 0 || descuentoPorcentaje > 100) {
+        return res.status(400).json({
+          message: "El descuento debe estar entre 0 y 100",
+        });
+      }
     }
 
     // Validar imágenes
@@ -220,6 +303,9 @@ router.post("/", verifyToken, async (req, res) => {
       nombre,
       descripcion,
       precio: parseFloat(precio),
+      descuentoPorcentaje: descuentoPorcentaje
+        ? parseFloat(descuentoPorcentaje)
+        : 0,
       imagen: imagenesValidas[0], // Primera imagen como imagen principal
       imagenes: imagenesValidas,
       categoria,
@@ -255,6 +341,7 @@ router.put("/:id", verifyToken, async (req, res) => {
       nombre,
       descripcion,
       precio,
+      descuentoPorcentaje,
       imagen,
       imagenes,
       categoria,
@@ -270,6 +357,15 @@ router.put("/:id", verifyToken, async (req, res) => {
       return res.status(404).json({
         message: "Producto no encontrado",
       });
+    }
+
+    // Validar descuento
+    if (descuentoPorcentaje !== undefined) {
+      if (descuentoPorcentaje < 0 || descuentoPorcentaje > 100) {
+        return res.status(400).json({
+          message: "El descuento debe estar entre 0 y 100",
+        });
+      }
     }
 
     // Validar imágenes si se actualizan
@@ -322,6 +418,8 @@ router.put("/:id", verifyToken, async (req, res) => {
     if (nombre) producto.nombre = nombre;
     if (descripcion) producto.descripcion = descripcion;
     if (precio) producto.precio = parseFloat(precio);
+    if (descuentoPorcentaje !== undefined)
+      producto.descuentoPorcentaje = parseFloat(descuentoPorcentaje);
     if (imagenesValidas.length > 0) {
       producto.imagen = imagenesValidas[0]; // Primera imagen como imagen principal
       producto.imagenes = imagenesValidas;

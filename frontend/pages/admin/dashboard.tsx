@@ -10,24 +10,7 @@ import ResetAgeVerification from '../../components/ResetAgeVerification'
 import toast from 'react-hot-toast'
 import OptimizedImage from '../../components/OptimizedImage'
 import { useSidebar } from '../../context/SidebarContext'
-
-interface Producto {
-  _id: string
-  nombre: string
-  precio: number
-  descripcion: string
-  imagen: string
-  imagenes?: string[]
-  categoria: { _id: string; nombre: string }
-  stock: number
-  activo: boolean
-  categoriaEliminada?: boolean
-  fechaDesactivacion?: string
-  gustos?: { _id: string; nombre: string; descripcion?: string }[]
-  stockPorGusto?: { gusto: { _id: string; nombre: string; descripcion?: string }; stock: number }[]
-  createdAt?: string
-  updatedAt?: string
-}
+import { Producto } from '../../types/product'
 
 export default function AdminDashboard() {
   const { auth } = useAuth()
@@ -48,6 +31,7 @@ export default function AdminDashboard() {
     nombre: '',
     descripcion: '',
     precio: '',
+    descuentoPorcentaje: '',
     imagen: '',
     imagenes: [] as string[],
     categoria: '',
@@ -90,6 +74,19 @@ export default function AdminDashboard() {
     if (formData.nombre.length > 100) newErrors.nombre = 'Máximo 100 caracteres'
     if (formData.descripcion.length > 500) newErrors.descripcion = 'Máximo 500 caracteres'
     if (formData.precio && parseFloat(formData.precio) < 0) newErrors.precio = 'No puede ser negativo'
+    
+    // Validar descuento solo si se está escribiendo y no está vacío
+    if (formData.descuentoPorcentaje && formData.descuentoPorcentaje.trim() !== '') {
+      const descuentoValue = parseFloat(formData.descuentoPorcentaje)
+      if (!isNaN(descuentoValue)) {
+        if (descuentoValue < 0) {
+          newErrors.descuentoPorcentaje = 'El descuento no puede ser negativo'
+        } else if (descuentoValue > 100) {
+          newErrors.descuentoPorcentaje = 'El descuento no puede ser mayor al 100%'
+        }
+      }
+    }
+    
     if (formData.stock && parseInt(formData.stock) < 0) newErrors.stock = 'No puede ser negativo'
     setErrors((prev: any) => ({ ...prev, ...newErrors }))
   }, [formData])
@@ -144,6 +141,19 @@ export default function AdminDashboard() {
     if (formData.descripcion.length > 500) newErrors.descripcion = 'Máximo 500 caracteres'
     if (!formData.precio) newErrors.precio = 'El precio es obligatorio'
     else if (parseFloat(formData.precio) < 0) newErrors.precio = 'No puede ser negativo'
+    
+    // Validar descuento si se proporciona
+    if (formData.descuentoPorcentaje && formData.descuentoPorcentaje.trim() !== '') {
+      const descuentoValue = parseFloat(formData.descuentoPorcentaje)
+      if (isNaN(descuentoValue)) {
+        newErrors.descuentoPorcentaje = 'El descuento debe ser un número válido'
+      } else if (descuentoValue < 0) {
+        newErrors.descuentoPorcentaje = 'El descuento no puede ser negativo'
+      } else if (descuentoValue > 100) {
+        newErrors.descuentoPorcentaje = 'El descuento no puede ser mayor al 100%'
+      }
+    }
+    
     if (!formData.imagen.trim() && formData.imagenes.length === 0) newErrors.imagen = 'Al menos una imagen es obligatoria'
     if (!formData.categoria) newErrors.categoria = 'La categoría es obligatoria'
     if (!formData.stock) newErrors.stock = 'El stock es obligatorio'
@@ -169,6 +179,7 @@ export default function AdminDashboard() {
       const productData = {
         ...formData,
         precio: parseFloat(formData.precio),
+        descuentoPorcentaje: formData.descuentoPorcentaje ? parseFloat(formData.descuentoPorcentaje) : 0,
         stock: parseInt(formData.stock),
         gustos: formData.gustos,
         stockPorGusto: formData.stockPorGusto,
@@ -207,6 +218,7 @@ export default function AdminDashboard() {
       nombre: producto.nombre,
       descripcion: producto.descripcion,
       precio: producto.precio.toString(),
+      descuentoPorcentaje: producto.descuentoPorcentaje ? producto.descuentoPorcentaje.toString() : '',
       imagen: producto.imagen,
       imagenes: producto.imagenes || [producto.imagen],
       categoria: producto.categoria && producto.categoria._id ? producto.categoria._id : (categorias.length > 0 ? categorias[0]._id : ''),
@@ -229,6 +241,7 @@ export default function AdminDashboard() {
       nombre: '',
       descripcion: '',
       precio: '',
+      descuentoPorcentaje: '',
       imagen: '',
       imagenes: [],
       categoria: categorias.length > 0 ? categorias[0]._id : '',
@@ -249,6 +262,7 @@ export default function AdminDashboard() {
       nombre: '',
       descripcion: '',
       precio: '',
+      descuentoPorcentaje: '',
       imagen: '',
       imagenes: [],
       categoria: categorias.length > 0 ? categorias[0]._id : '',
@@ -832,7 +846,23 @@ export default function AdminDashboard() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatPrice(producto.precio)}
+                        <div className="flex flex-col">
+                          {producto.descuentoPorcentaje && producto.descuentoPorcentaje > 0 ? (
+                            <>
+                              <span className="line-through text-gray-400 text-xs">
+                                {formatPrice(producto.precio)}
+                              </span>
+                              <span className="text-red-600 font-medium">
+                                {formatPrice(producto.precio * (1 - producto.descuentoPorcentaje / 100))}
+                              </span>
+                              <span className="text-xs text-red-600 font-medium">
+                                -{producto.descuentoPorcentaje}% OFF
+                              </span>
+                            </>
+                          ) : (
+                            <span>{formatPrice(producto.precio)}</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {producto.stock}
@@ -963,6 +993,29 @@ export default function AdminDashboard() {
                     />
                   </div>
                   {errors.precio && <div className="mt-1 text-sm text-red-600">⚠️ {errors.precio}</div>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descuento (%) <span className="text-gray-500">(opcional)</span>
+                  </label>
+                  <div className="flex items-center">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.descuentoPorcentaje}
+                      onChange={(e) => setFormData({...formData, descuentoPorcentaje: e.target.value})}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 bg-white ${errors.descuentoPorcentaje ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:border-amber-500 focus:ring-amber-500'}`}
+                      min={0}
+                      max={100}
+                      placeholder="0"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 text-sm">%</span>
+                    </div>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">Porcentaje de descuento (0-100). Deja vacío para sin descuento.</p>
+                  {errors.descuentoPorcentaje && <div className="mt-1 text-sm text-red-600">⚠️ {errors.descuentoPorcentaje}</div>}
                 </div>
 
                 <div>

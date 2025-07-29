@@ -21,19 +21,23 @@ interface SideCartProps {
 export default function SideCart({ isOpen, onClose, onCheckout }: Omit<SideCartProps, 'minFreeShipping'>) {
   const { state, updateQuantity, removeItem } = useCart()
   const [minFreeShipping, setMinFreeShipping] = useState(25000)
+  const [freeShippingEnabled, setFreeShippingEnabled] = useState(true)
   const cartRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     configApi.get().then(res => {
       if (res.success && res.config) {
         setMinFreeShipping(res.config.minFreeShipping)
+        setFreeShippingEnabled(res.config.freeShippingEnabled !== false) // Por defecto true
       } else {
         console.warn('No se pudo obtener configuración, usando valor por defecto')
         setMinFreeShipping(25000)
+        setFreeShippingEnabled(true)
       }
     }).catch(error => {
       console.warn('Error obteniendo configuración:', error)
       setMinFreeShipping(25000)
+      setFreeShippingEnabled(true)
     })
   }, [])
 
@@ -57,11 +61,25 @@ export default function SideCart({ isOpen, onClose, onCheckout }: Omit<SideCartP
     return () => document.removeEventListener('mousedown', handleClick)
   }, [isOpen, onClose])
 
-  const subtotal = state.items.reduce((sum, item) => sum + item.producto.precio * item.cantidad, 0)
-  const descuentos = 0 // Aquí puedes sumar descuentos si tienes lógica
-  const total = subtotal - descuentos
-  const faltante = Math.max(0, minFreeShipping - total)
-  const progreso = Math.min(100, (total / minFreeShipping) * 100)
+  const subtotal = state.items.reduce((sum, item) => {
+    // Usar precio con descuento si está disponible
+    const precio = item.producto.precioConDescuento || item.producto.precio
+    return sum + precio * item.cantidad
+  }, 0)
+  
+  // Calcular descuentos totales
+  const descuentos = state.items.reduce((sum, item) => {
+    if (item.producto.tieneDescuento) {
+      const precioOriginal = item.producto.precioOriginal || item.producto.precio
+      const precioConDescuento = item.producto.precioConDescuento || item.producto.precio
+      return sum + (precioOriginal - precioConDescuento) * item.cantidad
+    }
+    return sum
+  }, 0)
+  
+  const total = subtotal
+  const faltante = freeShippingEnabled ? Math.max(0, minFreeShipping - total) : 0
+  const progreso = freeShippingEnabled ? Math.min(100, (total / minFreeShipping) * 100) : 0
 
   return (
     <div className={`fixed inset-0 z-50 flex justify-end transition-all duration-300 ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
@@ -86,23 +104,25 @@ export default function SideCart({ isOpen, onClose, onCheckout }: Omit<SideCartP
           </button>
         </div>
 
-        {/* Barra de progreso animada */}
-        <div className="px-6 pt-4 pb-2">
-          <div className="flex justify-between items-center mb-1 text-sm font-medium" style={{ color: 'black' }}>
-            <span>
-              {faltante > 0
-                ? <>Agregá {formatPrice(faltante)} más y obtené <b style={{ color: 'white' }}>envío GRATIS</b></>
-                : <span className="font-bold" style={{ color: '#2E7D32' }}>¡Ya tenés envío GRATIS! 🎉</span>
-              }
-            </span>
+        {/* Barra de progreso de envío gratis */}
+        {freeShippingEnabled && (
+          <div className="px-6 pt-4 pb-2">
+            <div className="flex justify-between items-center mb-1 text-sm font-medium" style={{ color: 'black' }}>
+              <span>
+                {faltante > 0
+                  ? <>Agregá {formatPrice(faltante)} más y obtené <b style={{ color: 'white' }}>envío GRATIS</b></>
+                  : <span className="font-bold" style={{ color: '#2E7D32' }}>¡Ya tenés envío GRATIS! 🎉</span>
+                }
+              </span>
+            </div>
+            <div className="w-full h-3 rounded-full overflow-hidden" style={{ background: '#fff8e6' }}>
+              <div
+                className="h-full transition-[width] duration-700"
+                style={{ width: `${progreso}%`, background: 'linear-gradient(to right, rgb(209 159 82), rgb(0, 0, 0))' }}
+              />
+            </div>
           </div>
-          <div className="w-full h-3 rounded-full overflow-hidden" style={{ background: '#fff8e6' }}>
-            <div
-              className="h-full transition-[width] duration-700"
-              style={{ width: `${progreso}%`, background: 'linear-gradient(to right, rgb(209 159 82), rgb(0, 0, 0))' }}
-            />
-          </div>
-        </div>
+        )}
 
         {/* Lista de productos mejorada */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
@@ -175,7 +195,23 @@ export default function SideCart({ isOpen, onClose, onCheckout }: Omit<SideCartP
                 </div>
                 
                 <div className="flex flex-col items-end gap-2">
-                  <span className="font-bold text-lg" style={{ color: '#7C4F00' }}>{formatPrice(item.producto.precio * item.cantidad)}</span>
+                  {item.producto.tieneDescuento ? (
+                    <div className="text-right">
+                      <span className="line-through text-gray-400 text-sm">
+                        {formatPrice((item.producto.precioOriginal || item.producto.precio) * item.cantidad)}
+                      </span>
+                      <div className="font-bold text-lg text-red-600">
+                        {formatPrice((item.producto.precioConDescuento || item.producto.precio) * item.cantidad)}
+                      </div>
+                      <span className="text-xs text-red-600 font-medium">
+                        -{item.producto.descuentoPorcentaje}% OFF
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="font-bold text-lg" style={{ color: '#7C4F00' }}>
+                      {formatPrice((item.producto.precioConDescuento || item.producto.precio) * item.cantidad)}
+                    </span>
+                  )}
                   <button 
                     onClick={() => removeItem(item.producto._id, item.gustoId)} 
                     className="p-2 rounded-full transition-all duration-200 hover:scale-110 hover:bg-red-100" 
@@ -191,12 +227,14 @@ export default function SideCart({ isOpen, onClose, onCheckout }: Omit<SideCartP
 
         {/* Footer */}
         <div className="p-6 border-t" style={{ borderTop: '2px solid white', background: 'rgba(255,249,225,0.95)' }}>
-          <div className="flex justify-between items-center mb-2">
-            <span style={{ color: 'black' }}>Descuentos</span>
-            <span className="font-semibold" style={{ color: 'black' }}>{formatPrice(descuentos)}</span>
-          </div>
+          {descuentos > 0 && (
+            <div className="flex justify-between items-center mb-2">
+              <span style={{ color: 'black' }}>Descuentos aplicados</span>
+              <span className="font-semibold text-red-600">-{formatPrice(descuentos)}</span>
+            </div>
+          )}
           <div className="flex justify-between items-center text-lg font-bold mb-4">
-            <span style={{ color: '#7C4F00' }}>Subtotal</span>
+            <span style={{ color: '#7C4F00' }}>Total</span>
             <span style={{ color: '#7C4F00' }}>{formatPrice(total)}</span>
           </div>
           <button

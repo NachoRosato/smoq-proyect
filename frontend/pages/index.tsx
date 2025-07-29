@@ -1,27 +1,15 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
-import { ShoppingCart, Search, Filter, Star, TrendingUp, Zap, Package } from 'lucide-react'
+import { ShoppingCart, Search, Filter, Star, TrendingUp, Zap, Package, Sparkles } from 'lucide-react'
 import { useCart } from '../context/CartContext'
-import { productosApi, categoriasApi, configApi } from '../utils/api'
+import { productosApi, categoriasApi, configApi, contactoApi } from '../utils/api'
 import ProductCard from '../components/ProductCard'
 import Navbar from '../components/Navbar'
 import toast from 'react-hot-toast'
 import FloatingWhatsAppButton from '../components/FloatingWhatsAppButton'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
-
-export interface Producto {
-  _id: string
-  nombre: string
-  precio: number
-  descripcion: string
-  imagen: string
-  categoria: { _id: string; nombre: string }
-  stock: number
-  gustos?: { _id: string; nombre: string; descripcion?: string }[]
-  stockPorGusto?: { gusto: { _id: string; nombre: string; descripcion?: string }; stock: number }[]
-  activo: boolean
-}
+import { Producto } from '../types/product'
 
 export default function Home() {
   const { addItem, state } = useCart()
@@ -40,6 +28,7 @@ export default function Home() {
     telefono: '',
     mensaje: ''
   })
+  const [isContactSubmitting, setIsContactSubmitting] = useState(false)
   const router = useRouter();
   const [categorias, setCategorias] = useState<{ _id: string; nombre: string }[]>([])
   const [whatsappNumber, setWhatsappNumber] = useState('')
@@ -113,7 +102,7 @@ export default function Home() {
   const loadProductos = async () => {
     try {
       setLoading(true)
-      const response = await productosApi.getAll({ page: 1, limit: 100 }) as { success: boolean, data?: Producto[] }
+      const response = await productosApi.getWithDiscounts({ page: 1, limit: 100 }) as { success: boolean, data?: Producto[] }
       if (response.success && response.data) {
         setProductos(response.data || [])
       } else {
@@ -134,16 +123,29 @@ export default function Home() {
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Aquí puedes agregar la lógica para enviar el formulario
-    // Por ahora solo mostraremos un mensaje de éxito
-    toast.success('¡Gracias por contactarnos! Te responderemos pronto.')
-    setShowContactModal(false)
-    setContactForm({
-      nombre: '',
-      email: '',
-      telefono: '',
-      mensaje: ''
-    })
+    setIsContactSubmitting(true)
+    
+    try {
+      const response = await contactoApi.enviar(contactForm)
+      
+      if (response.success) {
+        toast.success('¡Gracias por contactarnos! Te responderemos pronto.')
+        setShowContactModal(false)
+        setContactForm({
+          nombre: '',
+          email: '',
+          telefono: '',
+          mensaje: ''
+        })
+      } else {
+        toast.error(response.error || 'Error al enviar el mensaje. Por favor, intenta nuevamente.')
+      }
+    } catch (error) {
+      console.error('Error enviando formulario de contacto:', error)
+      toast.error('Error al enviar el mensaje. Por favor, intenta nuevamente.')
+    } finally {
+      setIsContactSubmitting(false)
+    }
   }
 
   const handleContactInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -469,17 +471,28 @@ export default function Home() {
                 <>
                   {/* Enhanced Results Header */}
                   <div className="text-center mb-12">
+                    {/* 
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl mb-6 shadow-lg">
                       <Package className="w-8 h-8 text-gray-700" />
                     </div>
-                    <h2 className="text-4xl lg:text-5xl font-bold mb-4 text-gray-800">
-                      Nuestros Productos
-                    </h2>
-                    <p className="text-lg text-gray-600 font-medium mb-6">
+                    */}
+                    <div className="flex items-center justify-center gap-4 mb-4">
+                      <div className="w-6 h-6 bg-gradient-to-br from-amber-300 to-amber-700 rounded-full flex items-center justify-center shadow-md animate-pulse" style={{ animationDelay: '0.5s' }}>
+                        <Sparkles className="w-3 h-3 text-white" />
+                      </div>
+                      <h2 className="text-4xl lg:text-5xl font-bold text-gray-800" style={{paddingBottom: '10px'}}>
+                        Nuestros Productos Exclusivos
+                      </h2>
+                      <div className="w-6 h-6 bg-gradient-to-br from-amber-300 to-amber-700 rounded-full flex items-center justify-center shadow-md animate-pulse" style={{ animationDelay: '0.5s' }}>
+                        <Sparkles className="w-3 h-3 text-white" />
+                      </div>
+                    </div>
+
+                    {/* <p className="text-lg text-gray-600 font-medium mb-6">
                       {filteredProductos.length} de {productos.length} productos exclusivos
                     </p>
                     
-                    {/* Stats Cards */}
+                    Stats Cards
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto mb-12">
                       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
                         <div className="text-3xl font-bold text-gray-700 mb-2">{productos.filter(p => p.activo).length}</div>
@@ -495,7 +508,7 @@ export default function Home() {
                           <div className="text-sm font-medium opacity-90">En tu carrito</div>
                         </div>
                       )}
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* Enhanced Products Grid */}
@@ -555,7 +568,7 @@ export default function Home() {
                 >
                   <svg width="24" height="24" fill="currentColor"><path d="M20.52 3.48A12.07 12.07 0 0 0 12 0C5.37 0 0 5.37 0 12c0 2.12.55 4.18 1.6 6.01L0 24l6.18-1.62A12.07 12.07 0 0 0 12 24c6.63 0 12-5.37 12-12 0-3.21-1.25-6.23-3.48-8.52zM12 22c-1.85 0-3.66-.5-5.23-1.44l-.37-.22-3.67.96.98-3.58-.24-.37A9.94 9.94 0 0 1 2 12c0-5.52 4.48-10 10-10s10 4.48 10 10-4.48 10-10 10zm5.2-7.6c-.29-.15-1.7-.84-1.96-.94-.26-.1-.45-.15-.64.15-.19.29-.74.94-.91 1.13-.17.19-.34.21-.63.07-.29-.15-1.22-.45-2.33-1.43-.86-.77-1.44-1.72-1.61-2.01-.17-.29-.02-.45.13-.6.13-.13.29-.34.43-.51.14-.17.19-.29.29-.48.1-.19.05-.36-.02-.51-.07-.15-.64-1.54-.88-2.11-.23-.56-.47-.48-.64-.49-.16-.01-.36-.01-.56-.01-.19 0-.5.07-.76.36-.26.29-1 1-.99 2.43.01 1.43 1.03 2.81 1.18 3 .15.19 2.03 3.1 4.93 4.23.69.3 1.23.48 1.65.61.69.22 1.32.19 1.81.12.55-.08 1.7-.7 1.94-1.37.24-.67.24-1.25.17-1.37-.07-.12-.26-.19-.55-.34z"/></svg>
                 </a>
-                <a href="mailto:info@smoq.com.ar" className="hover:text-[rgb(124,79,0)] transition-colors text-white"><svg width="24" height="24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 2v.01L12 13 4 6.01V6h16zm0 12H4V8.99l8 6.99 8-6.99V18z"/></svg></a>
+                <a href="https://instagram.com/smoq" target="_blank" rel="noopener" className="hover:text-[rgb(124,79,0)] transition-colors text-white"><svg width="24" height="24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
                 <a href="#" className="hover:text-[rgb(124,79,0)] transition-colors text-white"><svg width="24" height="24" fill="currentColor"><path d="M22.46 6c-.77.35-1.6.58-2.47.69a4.3 4.3 0 0 0 1.88-2.37 8.59 8.59 0 0 1-2.72 1.04A4.28 4.28 0 0 0 16.11 4c-2.37 0-4.29 1.92-4.29 4.29 0 .34.04.67.11.99C7.69 9.13 4.07 7.2 1.64 4.16c-.37.64-.58 1.39-.58 2.19 0 1.51.77 2.84 1.94 3.62-.72-.02-1.39-.22-1.98-.55v.06c0 2.11 1.5 3.87 3.5 4.27-.36.1-.74.16-1.13.16-.28 0-.54-.03-.8-.08.54 1.68 2.11 2.9 3.97 2.93A8.6 8.6 0 0 1 2 19.54 12.13 12.13 0 0 0 8.29 21.5c7.55 0 11.68-6.26 11.68-11.68 0-.18-.01-.36-.02-.54A8.18 8.18 0 0 0 24 4.59a8.36 8.36 0 0 1-2.54.7z"/></svg></a>
               </div>
             </div>
@@ -566,7 +579,7 @@ export default function Home() {
                 <li><Link href="/" className="hover:text-[rgb(124,79,0)] transition-colors">Inicio</Link></li>
                 <li><Link href="/carrito" className="hover:text-[rgb(124,79,0)] transition-colors">Carrito</Link></li>
                 <li><a href="#productos" className="hover:text-[rgb(124,79,0)] transition-colors">Productos</a></li>
-                <li><a href="#" className="hover:text-[rgb(124,79,0)] transition-colors">Contacto</a></li>
+                <li><a href="#" onClick={(e) => { e.preventDefault(); setShowContactModal(true); }} className="hover:text-[rgb(124,79,0)] transition-colors cursor-pointer">Contacto</a></li>
               </ul>
             </div>
             {/* Contacto */}
@@ -575,7 +588,7 @@ export default function Home() {
               <ul className="space-y-2 text-gray-200">
                 <li><span className="font-semibold">Email:</span> info@smoq.com.ar</li>
                 <li>
-                  <span className="font-semibold">WhatsApp:</span> 
+                  <span className="font-semibold">WhatsApp: </span> 
                   {whatsappNumber ? (
                     <a 
                       href={`https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent('Hola! Quiero hacer una consulta!')}`}
@@ -607,8 +620,9 @@ export default function Home() {
                     📞 Contactar con SMOQ
                   </h3>
                   <button
+                    disabled={isContactSubmitting}
                     onClick={() => setShowContactModal(false)}
-                    className="text-gray-400 hover:text-[rgb(124,79,0)] transition-colors"
+                    className="text-gray-400 hover:text-[rgb(124,79,0)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -679,16 +693,25 @@ export default function Home() {
                   <div className="flex gap-3 pt-4">
                     <button
                       type="button"
+                      disabled={isContactSubmitting}
                       onClick={() => setShowContactModal(false)}
-                      className="flex-1 px-4 py-3 text-[rgb(124,79,0)] bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold border border-[rgb(124,79,0)] transition-colors"
+                      className="flex-1 px-4 py-3 text-[rgb(124,79,0)] bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold border border-[rgb(124,79,0)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 px-4 py-3 bg-[rgb(124,79,0)] text-white rounded-xl font-semibold hover:bg-[rgb(90,57,0)] transition-colors border border-[rgb(124,79,0)]"
+                      disabled={isContactSubmitting}
+                      className="flex-1 px-4 py-3 bg-[rgb(124,79,0)] text-white rounded-xl font-semibold hover:bg-[rgb(90,57,0)] transition-colors border border-[rgb(124,79,0)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                      Enviar mensaje
+                      {isContactSubmitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Enviando...
+                        </>
+                      ) : (
+                        'Enviar mensaje'
+                      )}
                     </button>
                   </div>
                 </form>

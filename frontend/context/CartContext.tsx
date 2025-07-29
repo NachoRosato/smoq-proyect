@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react'
-import type { Producto } from '../pages/index'
+import { Producto } from '../types/product'
 
 export interface CartItem {
   producto: Producto
@@ -95,6 +95,9 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
           return state
         }
         
+        // Usar precio con descuento si está disponible
+        const precio = producto.precioConDescuento || producto.precio
+        
         return {
           ...state,
           items: state.items.map(item =>
@@ -102,23 +105,31 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
               ? { ...item, cantidad: item.cantidad + 1 }
               : item
           ),
-          total: state.total + producto.precio
+          total: state.total + precio
         }
       }
+      
+      // Usar precio con descuento si está disponible
+      const precio = producto.precioConDescuento || producto.precio
+      
       return {
         ...state,
         items: [...state.items, { producto, cantidad: 1, gustoId }],
-        total: state.total + producto.precio
+        total: state.total + precio
       }
     }
     case 'REMOVE_ITEM': {
       const { id, gustoId } = action.payload
       const item = state.items.find(item => item.producto._id === id && item.gustoId === gustoId)
       if (!item) return state
+      
+      // Usar precio con descuento si está disponible
+      const precio = item.producto.precioConDescuento || item.producto.precio
+      
       return {
         ...state,
         items: state.items.filter(item => !(item.producto._id === id && item.gustoId === gustoId)),
-        total: state.total - (item.producto.precio * item.cantidad)
+        total: state.total - (precio * item.cantidad)
       }
     }
     case 'UPDATE_QUANTITY': {
@@ -132,7 +143,11 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       
       const item = state.items.find(item => item.producto._id === id && item.gustoId === gustoId)
       if (!item) return state
+      
+      // Usar precio con descuento si está disponible
+      const precio = item.producto.precioConDescuento || item.producto.precio
       const quantityDiff = cantidad - item.cantidad
+      
       return {
         ...state,
         items: state.items.map(item =>
@@ -140,7 +155,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
             ? { ...item, cantidad }
             : item
         ),
-        total: state.total + (item.producto.precio * quantityDiff)
+        total: state.total + (precio * quantityDiff)
       }
     }
     case 'CLEAR_CART':

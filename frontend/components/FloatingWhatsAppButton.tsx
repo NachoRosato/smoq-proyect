@@ -47,39 +47,26 @@ export default function FloatingWhatsAppButton() {
           transform: isHovered ? 'scale(1.1) rotate(5deg)' : 'scale(1) rotate(0deg)',
           boxShadow: isHovered 
             ? '0 0 8px 2px rgba(255,255,255,0.18)'
-            : '0 2px 6px rgba(0,0,0,0.12)'
+            : '0 2px 6px rgba(0,0,0,0.12)',
+          paddingLeft: '1px',
+          paddingBottom: '2px'
         }}
       >
-        <span 
+        <svg 
+          width="36" 
+          height="36" 
+          fill="currentColor" 
+          viewBox="0 0 24 24"
           className="transition-all duration-300"
           style={{
             color: 'white',
-            fontSize: '24px',
-            fontWeight: 'bold',
-            fontFamily: 'Arial, sans-serif',
             transform: isHovered ? 'scale(1.1)' : 'scale(1)',
-            textShadow: isHovered ? '0 0 10px rgba(255,255,255,0.5)' : 'none'
+            filter: isHovered ? 'drop-shadow(0 0 10px rgba(255,255,255,0.5))' : 'none'
           }}
         >
-          W
-        </span>
-        
-        {/* Triangulito del diálogo - pegado al círculo */}
-        <div 
-          className="absolute transition-all duration-300"
-        
-          style={{
-            width: '0',
-            height: '0',
-            borderLeft: '8px solid transparent',
-            borderRight: '8px solid transparent',
-            borderTop: '12px solid black',
-            bottom: '-2px',
-            right: '12px',
-            rotate: '120deg',
-            transform: isHovered ? 'scale(1.2) rotate(110deg)' : 'scale(1) rotate(100deg)'
-          }}
-        />
+          <path d="M20.52 3.48A12.07 12.07 0 0 0 12 0C5.37 0 0 5.37 0 12c0 2.12.55 4.18 1.6 6.01L0 24l6.18-1.62A12.07 12.07 0 0 0 12 24c6.63 0 12-5.37 12-12 0-3.21-1.25-6.23-3.48-8.52zM12 22c-1.85 0-3.66-.5-5.23-1.44l-.37-.22-3.67.96.98-3.58-.24-.37A9.94 9.94 0 0 1 2 12c0-5.52 4.48-10 10-10s10 4.48 10 10-4.48 10-10 10zm5.2-7.6c-.29-.15-1.7-.84-1.96-.94-.26-.1-.45-.15-.64.15-.19.29-.74.94-.91 1.13-.17.19-.34.21-.63.07-.29-.15-1.22-.45-2.33-1.43-.86-.77-1.44-1.72-1.61-2.01-.17-.29-.02-.45.13-.6.13-.13.29-.34.43-.51.14-.17.19-.29.29-.48.1-.19.05-.36-.02-.51-.07-.15-.64-1.54-.88-2.11-.23-.56-.47-.48-.64-.49-.16-.01-.36-.01-.56-.01-.19 0-.5.07-.76.36-.26.29-1 1-.99 2.43.01 1.43 1.03 2.81 1.18 3 .15.19 2.03 3.1 4.93 4.23.69.3 1.23.48 1.65.61.69.22 1.32.19 1.81.12.55-.08 1.7-.7 1.94-1.37.24-.67.24-1.25.17-1.37-.07-.12-.26-.19-.55-.34z"/>
+        </svg>
+
       </div>
       
       {/* Efecto de pulso cuando está hover */}
