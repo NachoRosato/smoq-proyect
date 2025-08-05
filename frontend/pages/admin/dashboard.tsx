@@ -42,8 +42,6 @@ export default function AdminDashboard() {
   const [categorias, setCategorias] = useState<any[]>([])
   const [gustos, setGustos] = useState<any[]>([])
   const [errors, setErrors] = useState<any>({})
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string>("")
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
 
@@ -229,8 +227,7 @@ export default function AdminDashboard() {
         stock: sg.stock 
       })) || []
     })
-    setImagePreview(producto.imagen)
-    setImageFile(null)
+    setImagePreviews(producto.imagenes || [producto.imagen])
     setImageFiles([])
     setImagePreviews(producto.imagenes || [producto.imagen])
     setShowModal(true)
@@ -249,8 +246,7 @@ export default function AdminDashboard() {
       gustos: [],
       stockPorGusto: []
     })
-    setImagePreview("")
-    setImageFile(null)
+    setImagePreviews([])
     setImageFiles([])
     setImagePreviews([])
     setErrors({})
@@ -270,8 +266,7 @@ export default function AdminDashboard() {
       gustos: [],
       stockPorGusto: []
     })
-    setImagePreview("")
-    setImageFile(null)
+    setImagePreviews([])
     setImageFiles([])
     setImagePreviews([])
     setErrors({})
@@ -330,23 +325,6 @@ export default function AdminDashboard() {
     }
   }
 
-  const handlePermanentDelete = async (producto: Producto) => {
-    if (!auth.token) return
-
-    try {
-      const response = await productosApi.permanentDelete(producto._id, auth.token)
-      if (response.success) {
-        toast.success('Producto eliminado definitivamente')
-        loadProductos()
-      } else {
-        toast.error(`Error al eliminar producto: ${response.error}`)
-      }
-    } catch (error) {
-      console.error('Error eliminando producto:', error)
-      toast.error('Error al eliminar producto')
-    }
-  }
-
   const confirmPermanentDelete = async () => {
     if (!productToPermanentDelete || !auth.token) return
 
@@ -365,15 +343,6 @@ export default function AdminDashboard() {
       setShowPermanentDeleteModal(false)
       setProductToPermanentDelete(null)
     }
-  }
-
-  // Agregar función auxiliar para obtener el nombre de la categoría
-  function getCategoriaNombre(categoria: any, categorias: any[]): string {
-    if (typeof categoria === 'object' && categoria !== null && 'nombre' in categoria) {
-      return categoria.nombre
-    }
-    const found = categorias.find(c => c._id === categoria)
-    return found ? found.nombre : 'Sin categoría'
   }
 
   // Manejo de cambio de archivo

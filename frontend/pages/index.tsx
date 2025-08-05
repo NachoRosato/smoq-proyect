@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
-import { ShoppingCart, Search, Filter, Star, TrendingUp, Zap, Package, Sparkles } from 'lucide-react'
+import { ShoppingCart, Search, Filter, Sparkles } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { productosApi, categoriasApi, configApi, contactoApi } from '../utils/api'
 import ProductCard from '../components/ProductCard'
@@ -12,7 +12,7 @@ import Link from 'next/link'
 import { Producto } from '../types/product'
 
 export default function Home() {
-  const { addItem, state } = useCart()
+  const { addItem } = useCart()
   const [productos, setProductos] = useState<Producto[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -196,8 +196,6 @@ export default function Home() {
     const matchesCategory = !selectedCategory || (producto.categoria && producto.categoria._id === selectedCategory)
     return matchesSearch && matchesCategory
   })
-
-  const cartItemCount = state.items.reduce((total, item) => total + item.cantidad, 0)
 
   return (
     <>

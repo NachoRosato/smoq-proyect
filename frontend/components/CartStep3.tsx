@@ -4,7 +4,6 @@ import { useCart } from '../context/CartContext'
 import { formatPrice } from '../lib/helpers'
 import { pedidosApi, configApi } from '../utils/api'
 import toast from 'react-hot-toast'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 
 interface FormData {

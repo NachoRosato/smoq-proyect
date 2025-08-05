@@ -228,7 +228,6 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
       {/* Modal de Token Expirado */}
       <TokenExpiredModal
         isOpen={showTokenExpiredModal}
-        onClose={() => setShowTokenExpiredModal(false)}
         onLogout={handleLogoutFromModal}
         onGoBack={handleGoBack}
       />

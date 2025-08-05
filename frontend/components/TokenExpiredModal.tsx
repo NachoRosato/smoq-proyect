@@ -3,14 +3,12 @@ import { AlertTriangle, LogOut, ArrowLeft } from 'lucide-react';
 
 interface TokenExpiredModalProps {
   isOpen: boolean;
-  onClose: () => void;
   onLogout: () => void;
   onGoBack: () => void;
 }
 
 const TokenExpiredModal: React.FC<TokenExpiredModalProps> = ({
   isOpen,
-  onClose,
   onLogout,
   onGoBack
 }) => {

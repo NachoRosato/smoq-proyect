@@ -1,6 +1,5 @@
 import axios from 'axios'
 
-debugger;
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://smoq-proyect-production.up.railway.app'
 
 interface ApiResponse<T> {
@@ -208,7 +207,7 @@ export const configApi = {
       }
     }
   },
-  update: async (minFreeShipping: number, freeShippingEnabled?: boolean, descuentoGeneralEnabled?: boolean, descuentoGeneralPorcentaje?: number, token: string) => {
+  update: async (minFreeShipping: number, freeShippingEnabled: boolean | undefined, descuentoGeneralEnabled: boolean | undefined, descuentoGeneralPorcentaje: number | undefined, token: string) => {
     try {
       const data: any = { minFreeShipping }
       if (freeShippingEnabled !== undefined) {

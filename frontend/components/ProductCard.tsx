@@ -11,7 +11,6 @@ interface ProductCardProps {
 
 export default function ProductCard({ producto, onAddToCart }: ProductCardProps) {
   const [selectedGusto, setSelectedGusto] = useState<string>('')
-  const [showGustosModal, setShowGustosModal] = useState(false)
   const [error, setError] = useState<string>('')
 
   const mainColor = 'rgb(124, 79, 0)';

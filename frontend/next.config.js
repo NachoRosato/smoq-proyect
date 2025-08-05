@@ -7,6 +7,7 @@ const nextConfig = {
     unoptimized: true,
     domains: [
       "localhost",
+      "smoq-proyect-production.up.railway.app",
       "images.unsplash.com",
       "picsum.photos",
       "via.placeholder.com",
@@ -30,7 +31,8 @@ const nextConfig = {
     return [
       {
         source: "/api/config/:path*",
-        destination: "http://localhost:3002/api/config/:path*",
+        destination:
+          "https://smoq-proyect-production.up.railway.app/api/config/:path*",
       },
     ];
   },
